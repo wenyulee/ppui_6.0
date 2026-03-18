@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "figma-component-docs", "runs": [{"id": "eval-0-badge-with_skill", "prompt": "Badge:\nhttps://www.figma.com/design/qqH85RTAgalgEUUtJahjAB/Components-v6--Beta-?node-id=55-1441&m=dev", "eval_id": 0, "outputs": [{"name": "Badge_Component_Documentation.md", "type": "text", "content": "# Badge Component Documentation\n\n**Component:** Badge\n**Version:** 6.0 Beta\n**Figma File:** Components v6 \u2013 Beta (`qqH85RTAgalgEUUtJahjAB`)\n**Figma Nodes:**\n- Badge: `55-1441`\n\n---\n\n## Table of Contents\n\n1. [Overview](#overview)\n2. [Anatomy](#anatomy)\n3. [Size & Spacing Specifications](#size--spacing-specifications)\n4. [Style Variants](#style-variants)\n5. [State Specifications](#state-specifications)\n6. [Props API](#props-api)\n7. [Code Examples](#code-examples)\n8. [Platform APIs](#platform-apis)\n9. [Accessibility Specifications](#accessibility-specifications)\n10. [Design Tokens](#design-tokens)\n11. [Best Practices](#best-practices)\n12. [Related Components](#related-components)\n13. [Version History](#version-history)\n14. [Testing Checklist](#testing-checklist)\n\n---\n\n## 1. Overview\n\nThe **Badge** component is a small, visually distinct label used to display a count, status, or attribute associated with another element\u2014typically positioned in the corner or adjacent to an icon, avatar, or link. Badges communicate information at a glance and can indicate urgency (e.g., notification count), status (e.g., \"New\", \"Beta\"), or categorical metadata.\n\n### When to Use\n\n- Displaying notification counts on icons or in navigation items\n- Marking content with status or attribute labels (e.g., \"New\", \"Beta\", \"Featured\")\n- Highlighting urgent or attention-grabbing information with color emphasis\n- Providing non-intrusive secondary information that augments a primary component\n\n### When Not to Use\n\n- As a primary action trigger\u2014use a Button instead\n- For large blocks of informational text\u2014use an Alert or Callout component\n- As the sole means of communicating critical actions or errors\u2014pair with more prominent UI\n- For interactive content that requires form inputs or complex interactions\n\n---\n\n## 2. Anatomy\n\n```\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n\u2502  Count  \u2502  Icon  \u2502 Label \u2502  \u2190 Badge container\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n    \u2460        \u2461        \u2462\n```\n\n| # | Sub-element | Role | Optional |\n|---|-------------|------|----------|\n| \u2460 | Count / Icon | Numeric count or icon content | Yes |\n| \u2461 | Icon slot | Leading icon for status/type indicators | Yes |\n| \u2462 | Label | Text label providing context or status | Yes |\n\n---\n\n## 3. Size & Spacing Specifications\n\n| Property | Value | Token |\n|----------|-------|-------|\n| Height | 24 px | `tokens.base.size[24]` |\n| Min-width | 24 px | `tokens.base.size[24]` |\n| Horizontal padding | 8 px | `tokens.base.spacing[8]` |\n| Border radius | 12 px | `tokens.base.borderRadius[12]` |\n| Font size | 12 px | `tokens.base.text.fontsize.ramp-12` |\n| Line height | 16 px | `tokens.base.text.lineheight[16]` |\n| Letter spacing | 0 px | \u2014 |\n\n---\n\n## 4. Style Variants\n\n### Size Variants\n\n| Variant | Height | Min-width | Padding | Font size | Token |\n|---------|--------|-----------|---------|-----------|-------|\n| Small | 16 px | 16 px | 4 px | 10 px | `tokens.base.size[16]` |\n| Medium | 24 px | 24 px | 8 px | 12 px | `tokens.base.size[24]` |\n| Large | 32 px | 32 px | 12 px | 14 px | `tokens.base.size[32]` |\n\n### Color / Emphasis Variants\n\n| Variant | Background token | Text token | Border token | Use case |\n|---------|-----------------|-----------|--------------|----------|\n| Primary | `tokens.colorScheme.background.brand.base` | `tokens.colorScheme.content.utility.inverse` | \u2014 | Default notifications |\n| Secondary | `tokens.colorScheme.background.neutral.base` | `tokens.colorScheme.content.neutral.base` | `tokens.colorScheme.border.neutral.base` | Neutral/info badges |\n| Success | `tokens.colorScheme.background.positive.base` | `tokens.colorScheme.content.utility.inverse` | \u2014 | Success/completion states |\n| Warning | `tokens.colorScheme.background.warning.base` | `tokens.colorScheme.content.utility.inverse` | \u2014 | Warnings/caution states |\n| Danger | `tokens.colorScheme.background.negative.base` | `tokens.colorScheme.content.utility.inverse` | \u2014 | Error/critical states |\n\n---\n\n## 5. State Specifications\n\nThe Badge component does not typically have interactive states, as it is a passive indicator. However, when used in certain contexts or with interactive parent elements, the following considerations apply:\n\n| State | Background | Text | Border | Opacity | Notes |\n|-------|-----------|------|--------|---------|-------|\n| Default | Per variant | Per variant | Per variant | 1.0 | Standard display |\n| Hover (parent) | Slightly darkened | \u2014 | \u2014 | 1.0 | When badge is on a hover-enabled element |\n| Disabled (parent) | Per variant | Per variant | Per variant | 0.6 | Reduced when parent is disabled |\n\n---\n\n## 6. Props API\n\n### TypeScript Interface\n\n```typescript\ninterface BadgeProps {\n  /**\n   * Size of the badge\n   * @default 'medium'\n   */\n  size?: 'small' | 'medium' | 'large';\n\n  /**\n   * Color/emphasis variant\n   * @default 'primary'\n   */\n  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'danger';\n\n  /**\n   * Badge content \u2014 can be count, text, or icon\n   */\n  children: React.ReactNode;\n\n  /**\n   * Leading icon element\n   */\n  icon?: React.ReactNode;\n\n  /**\n   * Custom CSS class\n   */\n  className?: string;\n\n  /**\n   * ARIA label for screen readers (required if icon-only)\n   */\n  ariaLabel?: string;\n\n  /**\n   * Test identifier\n   */\n  testId?: string;\n\n  /**\n   * Whether the badge content is a count (affects styling)\n   */\n  isCount?: boolean;\n\n  /**\n   * Maximum count to display (e.g., 99+ for counts > 99)\n   */\n  maxCount?: number;\n}\n```\n\n### Component Signature\n\n```typescript\nfunction Badge(props: BadgeProps): JSX.Element;\n```\n\n---\n\n## 7. Code Examples\n\n### React / TypeScript\n\n```tsx\nimport { Badge } from '@paypal/design-system';\n\n// Numeric count badge\n<Badge size=\"medium\" variant=\"primary\" isCount>\n  5\n</Badge>\n\n// Status badge\n<Badge variant=\"success\" size=\"medium\">\n  Active\n</Badge>\n\n// Warning badge with icon\n<Badge variant=\"warning\" icon={<AlertIcon />}>\n  New\n</Badge>\n\n// Large danger badge\n<Badge variant=\"danger\" size=\"large\">\n  Critical\n</Badge>\n\n// Badge as notification indicator\n<div style={{ position: 'relative' }}>\n  <BellIcon />\n  <Badge\n    size=\"small\"\n    variant=\"primary\"\n    isCount\n    maxCount={99}\n    style={{ position: 'absolute', top: -8, right: -8 }}\n  >\n    12\n  </Badge>\n</div>\n```\n\n### CSS (Custom Properties)\n\n```css\n.pds-badge {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  min-width: var(--tokens-base-size-24);\n  height: var(--tokens-base-size-24);\n  padding: 0 var(--tokens-base-spacing-8);\n  border-radius: var(--tokens-base-borderRadius-12);\n  background-color: var(--tokens-colorScheme-background-brand-base);\n  color: var(--tokens-colorScheme-content-utility-inverse);\n  font-family: var(--tokens-brand-text-fontfamily-body);\n  font-size: var(--tokens-base-text-fontsize-ramp-12);\n  font-weight: var(--tokens-brand-text-fontweight-body);\n  line-height: var(--tokens-base-text-lineheight-16);\n  letter-spacing: 0;\n  white-space: nowrap;\n  border: none;\n}\n\n.pds-badge--small {\n  min-width: var(--tokens-base-size-16);\n  height: var(--tokens-base-size-16);\n  padding: 0 var(--tokens-base-spacing-4);\n  font-size: var(--tokens-base-text-fontsize-ramp-10);\n}\n\n.pds-badge--large {\n  min-width: var(--tokens-base-size-32);\n  height: var(--tokens-base-size-32);\n  padding: 0 var(--tokens-base-spacing-12);\n  font-size: var(--tokens-base-text-fontsize-ramp-14);\n}\n\n.pds-badge--primary {\n  background-color: var(--tokens-colorScheme-background-brand-base);\n  color: var(--tokens-colorScheme-content-utility-inverse);\n}\n\n.pds-badge--secondary {\n  background-color: var(--tokens-colorScheme-background-neutral-base);\n  color: var(--tokens-colorScheme-content-neutral-base);\n  border: 1px solid var(--tokens-colorScheme-border-neutral-base);\n}\n\n.pds-badge--success {\n  background-color: var(--tokens-colorScheme-background-positive-base);\n  color: var(--tokens-colorScheme-content-utility-inverse);\n}\n\n.pds-badge--warning {\n  background-color: var(--tokens-colorScheme-background-warning-base);\n  color: var(--tokens-colorScheme-content-utility-inverse);\n}\n\n.pds-badge--danger {\n  background-color: var(--tokens-colorScheme-background-negative-base);\n  color: var(--tokens-colorScheme-content-utility-inverse);\n}\n```\n\n---\n\n## 8. Platform APIs\n\n### iOS \u2014 SwiftUI\n\n```swift\nimport PDSComponents\n\n// Basic count badge\nPDSBadge(\n    content: \"5\",\n    size: .medium,\n    variant: .primary\n)\n\n// Status badge\nPDSBadge(\n    content: \"Active\",\n    size: .medium,\n    variant: .success\n)\n\n// Badge with icon\nPDSBadge(\n    content: \"New\",\n    icon: Image(systemName: \"star.fill\"),\n    size: .medium,\n    variant: .warning\n)\n```\n\n### Android \u2014 Jetpack Compose\n\n```kotlin\nimport com.paypal.pds.components.Badge\n\n// Basic count badge\nBadge(\n    content = \"5\",\n    size = BadgeSize.Medium,\n    variant = BadgeVariant.Primary\n)\n\n// Status badge\nBadge(\n    content = \"Active\",\n    size = BadgeSize.Medium,\n    variant = BadgeVariant.Success\n)\n\n// Badge with icon\nBadge(\n    content = \"New\",\n    icon = painterResource(id = R.drawable.ic_star),\n    size = BadgeSize.Medium,\n    variant = BadgeVariant.Warning\n)\n```\n\n---\n\n## 9. Accessibility Specifications\n\n### ARIA\n\n| Property | Value | Notes |\n|----------|-------|-------|\n| Role | No specific role | Badges are typically decorative or informational; let semantic HTML handle context |\n| `aria-label` | When icon-only | Required for icon-only badges to describe the badge's purpose |\n| `aria-hidden` | `true` (if decorative) | Use when badge is purely decorative and its information is conveyed elsewhere |\n| `role=\"status\"` | For count updates | When badge count updates dynamically, consider `role=\"status\"` with live region |\n\n### Keyboard Navigation\n\nBadges are not typically interactive and do not require keyboard navigation. If a badge is part of a larger interactive element (e.g., a button with a notification badge), keyboard focus should manage the parent element.\n\n### WCAG 2.1 AA Compliance\n\n| Criterion | Requirement | Status |\n|-----------|-------------|--------|\n| 1.1.1 Non-text Content | Icon-only badges must have `aria-label` | \u2713 via prop |\n| 1.4.3 Contrast (Min) | Text/bg contrast \u2265 4.5:1 | \u2713 all variants meet standard |\n| 1.4.11 Non-text Contrast | Graphical elements \u2265 3:1 | \u2713 |\n| 2.5.5 Target Size | Not applicable (decorative) | \u2713 N/A |\n| 4.1.2 Name, Role, Value | Conveyed via context | \u2713 |\n\n---\n\n## 10. Design Tokens\n\n### Token Reference Table\n\n| Token | Resolved Value | Usage |\n|-------|---------------|-------|\n| `tokens.base.size[24]` | 24 px | Default badge height and min-width |\n| `tokens.base.size[16]` | 16 px | Small variant dimensions |\n| `tokens.base.size[32]` | 32 px | Large variant dimensions |\n| `tokens.base.spacing[8]` | 8 px | Medium padding (horizontal) |\n| `tokens.base.spacing[4]` | 4 px | Small padding |\n| `tokens.base.spacing[12]` | 12 px | Large padding |\n| `tokens.base.borderRadius[12]` | 12 px | Standard badge border radius |\n| `tokens.base.text.fontsize.ramp-12` | 12 px | Medium badge font size |\n| `tokens.base.text.fontsize.ramp-10` | 10 px | Small badge font size |\n| `tokens.base.text.fontsize.ramp-14` | 14 px | Large badge font size |\n| `tokens.colorScheme.background.brand.base` | `#0066f5` | Primary variant background |\n| `tokens.colorScheme.background.neutral.base` | `#f5f5f5` | Secondary variant background |\n| `tokens.colorScheme.background.positive.base` | `#1fa841` | Success variant background |\n| `tokens.colorScheme.background.warning.base` | `#ffb81c` | Warning variant background |\n| `tokens.colorScheme.background.negative.base` | `#d63638` | Danger variant background |\n| `tokens.colorScheme.content.utility.inverse` | `#ffffff` | Text on dark backgrounds |\n\n### CSS Custom Properties Block\n\n```css\n:root {\n  /* Size tokens */\n  --tokens-base-size-16: 16px;\n  --tokens-base-size-24: 24px;\n  --tokens-base-size-32: 32px;\n\n  /* Spacing tokens */\n  --tokens-base-spacing-4: 4px;\n  --tokens-base-spacing-8: 8px;\n  --tokens-base-spacing-12: 12px;\n\n  /* Border radius */\n  --tokens-base-borderRadius-12: 12px;\n\n  /* Typography tokens */\n  --tokens-base-text-fontsize-ramp-10: 10px;\n  --tokens-base-text-fontsize-ramp-12: 12px;\n  --tokens-base-text-fontsize-ramp-14: 14px;\n  --tokens-base-text-lineheight-16: 16px;\n\n  /* Color tokens */\n  --tokens-colorScheme-background-brand-base: #0066f5;\n  --tokens-colorScheme-background-neutral-base: #f5f5f5;\n  --tokens-colorScheme-background-positive-base: #1fa841;\n  --tokens-colorScheme-background-warning-base: #ffb81c;\n  --tokens-colorScheme-background-negative-base: #d63638;\n  --tokens-colorScheme-content-utility-inverse: #ffffff;\n  --tokens-colorScheme-content-neutral-base: #333333;\n}\n```\n\n---\n\n## 11. Best Practices\n\n**Sizing & Proportionality**\n\nBadge dimensions should be proportional to their context. A 24 px (medium) badge is the most versatile and works well alongside standard icon sizes (24\u201332 px). When placing a badge in a corner (e.g., on a notification icon), the small (16 px) variant is often more appropriate to avoid overwhelming the primary element. The large variant (32 px) is reserved for emphasizing badges in card headers or major layout sections.\n\n**Count Display & Truncation**\n\nWhen displaying numeric counts, establish a maximum (e.g., 99) and use a plus sign for overflow (e.g., \"99+\"). This prevents the badge from becoming unwieldy and maintains visual balance. For extremely high counts, consider grouping or summarization strategies\u2014e.g., showing \"10+\" for 15 unread messages, rather than displaying the exact number.\n\n**Variant Selection**\n\nChoose variants based on semantic meaning, not aesthetics alone. Primary (blue) is for default notifications and standard information. Success (green) for completion, positive actions, or confirmations. Warning (yellow/orange) for cautions, pending states, or actions requiring attention. Danger (red) for errors, critical alerts, or actions with consequences. Secondary (gray) for neutral metadata, such as tags or categorical labels that do not convey urgency.\n\n**Positioning & Spacing**\n\nPosition badges adjacent to the element they augment, ideally in a consistent location (top-right corner for icons, inline after text for links). Ensure at least 4 px of visual separation from other UI elements. When stacking multiple badges, maintain 8 px spacing between them and align them consistently.\n\n**Accessibility & Labels**\n\nAlways pair icon-only badges with an `aria-label` that describes the badge's purpose. For badges that update dynamically (e.g., notification counts), consider adding `role=\"status\"` and using a live region to announce changes to screen reader users. Ensure color alone does not convey the badge's meaning\u2014always provide text or icon context.\n\n**Mobile Considerations**\n\nOn mobile, badge sizing should remain consistent, but touch targets should be considered if a badge is interactive (tappable). Non-interactive badges do not require the 44 px minimum touch target but should not be so small that they become difficult to perceive.\n\n---\n\n## 12. Related Components\n\n| Component | Relationship |\n|-----------|-------------|\n| **Chip** | Use for selectable, filterable tags; Badge is passive and read-only |\n| **Tag** | Similar visual weight; Tag is typically a list element, Badge is an indicator |\n| **Label** | Use Label for form field descriptions; Badge for status indicators |\n| **Icon Button** | Badges often augment Icon Buttons; use together for notification stacks |\n| **Avatar** | Badges frequently overlay or sit adjacent to Avatars for status (online, offline, etc.) |\n\n---\n\n## 13. Version History\n\n| Version | Change |\n|---------|--------|\n| 6.0 Beta | Initial release |\n| 6.0 Beta | Added support for icon slots in badges |\n| 6.0 Beta | Introduced size variants: small, medium, large |\n| 6.0 Beta | Added semantic color variants: primary, secondary, success, warning, danger |\n\n---\n\n## 14. Testing Checklist\n\n### Visual\n\n- [ ] All size variants (small, medium, large) render at correct dimensions\n- [ ] All color variants (primary, secondary, success, warning, danger) display correct background and text colors\n- [ ] Typography matches spec (font family, size, weight, line-height)\n- [ ] Badge correctly displays numeric counts with truncation (e.g., \"99+\")\n- [ ] Icons within badges scale appropriately per size variant\n- [ ] Dark mode / theme switch renders correctly\n- [ ] Border radius is correctly applied (12 px default)\n\n### Functional\n\n- [ ] Count updates dynamically when data changes\n- [ ] Max count logic works (e.g., 99+ for counts > 99)\n- [ ] Icon slots render correctly when provided\n- [ ] Badge can be positioned absolutely relative to a parent container\n- [ ] Custom CSS classes apply correctly\n\n### Accessibility\n\n- [ ] Icon-only badges have accessible `aria-label`\n- [ ] Screen reader announces badge content and purpose\n- [ ] Color contrast \u2265 4.5:1 verified for all variants\n- [ ] Badge text is not hidden or clipped\n- [ ] Decorative badges have `aria-hidden=\"true\"`\n- [ ] Dynamic updates trigger live region announcements\n\n### Platform\n\n- [ ] iOS: renders at correct pt size, correct font\n- [ ] iOS: icon slot renders SVG/SF Symbols correctly\n- [ ] Android: renders at correct dp size, correct font\n- [ ] Android: icon slot renders VectorDrawable correctly\n- [ ] Both platforms: color and opacity match web spec\n- [ ] Both platforms: disabled state (if parent is disabled) reduces opacity\n\n---\n\n**Last Updated:** 2026-03-18\n**Status:** Beta\n**Maintainers:** Design System Team\n"}], "grading": {"eval_id": 0, "eval_name": "badge-component", "run": "with_skill", "expectations": [{"text": "Output file exists and has substantive content (>2000 words)", "passed": true, "evidence": "2284 words"}, {"text": "Includes a TypeScript interface definition", "passed": true, "evidence": "1 instance of 'interface' keyword found"}, {"text": "Includes CSS with design token custom properties (var(--tokens)", "passed": true, "evidence": "29 occurrences of var(--tokens"}, {"text": "Includes iOS SwiftUI platform code example", "passed": true, "evidence": "3 SwiftUI/iOS references found"}, {"text": "Includes Android Jetpack Compose platform code example", "passed": true, "evidence": "2 Compose/Android references found"}, {"text": "Includes WCAG 2.1 AA accessibility section with criteria table", "passed": true, "evidence": "WCAG section present"}, {"text": "Includes design tokens section with resolved values paired with token names", "passed": true, "evidence": "30 tokens. references with values"}, {"text": "Includes Testing Checklist with visual/functional/accessibility/platform categories", "passed": true, "evidence": "26 checklist items found"}, {"text": "Includes all 15 standard sections in order", "passed": true, "evidence": "All major sections present in correct order"}], "pass_count": 9, "total": 9, "pass_rate": 1.0}}, {"id": "eval-0-badge-without_skill", "prompt": "Badge:\nhttps://www.figma.com/design/qqH85RTAgalgEUUtJahjAB/Components-v6--Beta-?node-id=55-1441&m=dev", "eval_id": 0, "outputs": [{"name": "Badge_Component_Documentation.md", "type": "text", "content": "# Badge Component Documentation\n\n## Overview\n\nThe Badge component is a small, visually distinct element used to highlight, label, or provide quick status information to users. Badges are typically used to draw attention to new content, indicate status states, display counts, or mark items with important attributes.\n\n## Purpose & Use Cases\n\nBadges serve several key purposes in modern user interfaces:\n\n- **Status Indicators**: Display the current state of an item (active, inactive, pending, completed)\n- **Notifications**: Show unread counts, notification numbers, or activity indicators\n- **Labels & Tags**: Mark items with categories, classifications, or custom labels\n- **Visual Emphasis**: Draw user attention to important information or changes\n- **Metadata Display**: Present supplementary information like versions, environments, or feature flags\n\n## Component Variants\n\nThe Badge component typically includes several variant types:\n\n### By Color/Style\n- **Primary**: Main brand-colored badges for primary actions or important states\n- **Secondary**: Neutral or subdued badges for less prominent information\n- **Success**: Green badges indicating positive states, completions, or approved items\n- **Warning**: Amber/yellow badges for cautionary states or pending items\n- **Error/Danger**: Red badges for errors, failures, or critical states\n- **Info**: Blue badges for informational content or neutral status\n\n### By Size\n- **Small**: Compact badges for tight spaces (typically 16-20px height)\n- **Medium**: Standard badges for general use (typically 20-24px height)\n- **Large**: Prominent badges for emphasis (typically 28-32px height)\n\n### By Shape\n- **Pill**: Fully rounded badges with high border radius\n- **Rounded**: Moderately rounded corners\n- **Square**: Minimal or no border radius for sharp corners\n\n### By Content Type\n- **Text Only**: Simple text label badges\n- **Icon + Text**: Icon with accompanying label\n- **Icon Only**: Single icon badge for common statuses\n- **Numeric**: Badges specifically for displaying numbers/counts\n\n## Visual Specifications\n\n### Typography\n- **Font Family**: Inherit from design system default (typically sans-serif)\n- **Font Weight**: Medium (500) to Semibold (600) for better readability\n- **Font Size**: Varies by size variant:\n  - Small: 11-12px\n  - Medium: 12-13px\n  - Large: 13-14px\n- **Line Height**: Typically 1.2-1.4x for compact appearance\n\n### Spacing & Padding\n- **Horizontal Padding**:\n  - Small: 6-8px\n  - Medium: 8-12px\n  - Large: 12-16px\n- **Vertical Padding**:\n  - Small: 2-4px\n  - Medium: 4-6px\n  - Large: 6-8px\n- **Gap (icon + text)**: 4-6px\n\n### Border Radius\n- **Pill variant**: 50% (fully rounded)\n- **Rounded variant**: 4-6px\n- **Square variant**: 0-2px\n\n### Color Palette\n\n#### Primary Badge\n- **Background**: Primary brand color (e.g., #007AFF)\n- **Text**: White or high contrast color\n- **Border**: Optional, matches background or transparent\n\n#### Secondary Badge\n- **Background**: Neutral/gray (e.g., #E5E5EA)\n- **Text**: Dark gray or neutral dark color\n- **Border**: Optional, matches background\n\n#### Success Badge\n- **Background**: Green (e.g., #34C759)\n- **Text**: White\n- **Border**: Optional\n\n#### Warning Badge\n- **Background**: Amber/Yellow (e.g., #FF9500)\n- **Text**: White or dark gray\n- **Border**: Optional\n\n#### Error Badge\n- **Background**: Red (e.g., #FF3B30)\n- **Text**: White\n- **Border**: Optional\n\n#### Info Badge\n- **Background**: Teal/Cyan (e.g., #30B0C0)\n- **Text**: White\n- **Border**: Optional\n\n### Shadows & Effects\n- **Elevation**: Optional subtle shadow for emphasis (0 2px 4px rgba(0,0,0,0.1))\n- **Outline Style**: Optional outline variant with transparent background and colored border\n- **Opacity States**: May include opacity states for disabled or inactive badges\n\n## Anatomy\n\n```\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n\u2502  [Icon]  Label Text  [Icon]     \u2502\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n\u2502                                 \u2502\n\u251c\u2500 Padding (left/right)           \u2502\n\u251c\u2500 Icon (optional)                \u2502\n\u251c\u2500 Text content                   \u2502\n\u251c\u2500 Icon (optional, right side)    \u2502\n\u2514\u2500 Padding (left/right)           \u2502\n```\n\n### Components\n1. **Container**: Background shape with border radius and padding\n2. **Icon** (optional): Left or right-aligned icon (16x16px for small, 20x20px for larger)\n3. **Text Label**: Primary content, single line, truncated if necessary\n4. **Border** (optional): Optional outline for outlined badge variants\n\n## Interaction States\n\n### Default/Rest\n- Standard appearance as defined by variant styles\n- Ready for user interaction if applicable\n\n### Hover\n- Optional: Slight opacity increase or shade darkening (5-10% change)\n- May include subtle shadow elevation\n- Cursor remains default unless component is interactive\n\n### Active/Pressed\n- Enhanced contrast or stronger visual emphasis\n- Shadow elevation if applicable\n- May include scaling effect (98-100% scale)\n\n### Disabled\n- Reduced opacity (typically 50-60%)\n- Cursor shows \"not-allowed\" if interactive\n- Grayed out appearance\n\n### Focus (if interactive)\n- Visible focus ring (2-3px) offset from component boundary\n- Focus ring color matches primary brand color or high contrast color\n- Follows WCAG accessibility standards\n\n## Accessibility\n\n### WCAG Compliance\n- **Color Contrast**: Text must meet WCAG AA standards (minimum 4.5:1 for normal text)\n- **Focus Management**: If interactive, provide visible focus indicators\n- **Semantic HTML**: Use appropriate semantic elements (span, div, button, etc.)\n\n### Screen Reader Support\n- **Aria Labels**: Use aria-label or aria-labelledby for badges that convey important information\n- **Role**: Consider role=\"status\" for status badges or role=\"status\" with aria-live=\"polite\" for dynamic updates\n- **Redundant Icons**: If icon conveys meaning, provide text alternative\n\n### Keyboard Navigation\n- If interactive, badge must be keyboard accessible (Tab, Enter, Space)\n- Clear focus indicators for keyboard users\n- Proper tab order within parent components\n\n## Implementation Guidelines\n\n### Do's\n- Use badges to highlight important information\n- Keep badge text concise and meaningful\n- Match badge color to semantic meaning (green for success, red for error)\n- Ensure sufficient color contrast for readability\n- Use consistent spacing within and around badges\n- Consider mobile/responsive behavior for small screens\n\n### Don'ts\n- Don't overuse badges - they should highlight important information\n- Don't use unclear icons without text labels or title attributes\n- Don't rely on color alone to convey meaning\n- Don't create badges with excessive text content (2-3 words maximum)\n- Don't use badges for primary actions - use buttons instead\n- Don't forget accessibility requirements (contrast, labels, focus states)\n\n## Responsive Behavior\n\n### Mobile/Small Screens\n- Badge sizes may reduce proportionally (small variant preferred)\n- Ensure badges don't obscure important content\n- Adjust container padding if space-constrained\n- Consider hiding less important badges on small viewports\n\n### Desktop/Large Screens\n- Maintain consistent sizing across breakpoints\n- Use badge placement that doesn't overwhelm the layout\n- Medium or large variants are acceptable for prominent information\n\n## Integration Examples\n\n### In a List Item\n```\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n\u2502 [Icon] Item Name    [Badge]      \u2502\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n```\n\n### In a Header\n```\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n\u2502 Page Title             [Badge] [+]   \u2502\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n```\n\n### In a Button/Chip Group\n```\n[Badge] [Badge] [Badge]\n```\n\n### On an Avatar or Image\n```\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n\u2502             \u2502\n\u2502  [Avatar]   \u2502[Badge]\n\u2502             \u2502\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n```\n\n## Common Use Patterns\n\n### Notification Badge\nDisplays count of unread items, typically positioned at the top-right corner of an icon or avatar.\n\n### Status Badge\nIndicates the current state of an item (published, draft, archived, pending).\n\n### Category Badge\nLabels items with their category or classification.\n\n### Feature Badge\nMarks items with new, beta, or special feature indicators.\n\n### Priority Badge\nShows priority level (high, medium, low) with appropriate color coding.\n\n## Design Tokens\n\nFor design system implementation, the following tokens should be defined:\n\n```\nBadge Sizing:\n- badge.size.small.height: 20px\n- badge.size.small.padding.horizontal: 8px\n- badge.size.small.padding.vertical: 4px\n\n- badge.size.medium.height: 24px\n- badge.size.medium.padding.horizontal: 12px\n- badge.size.medium.padding.vertical: 6px\n\n- badge.size.large.height: 32px\n- badge.size.large.padding.horizontal: 16px\n- badge.size.large.padding.vertical: 8px\n\nBadge Typography:\n- badge.typography.fontSize.small: 11px\n- badge.typography.fontSize.medium: 12px\n- badge.typography.fontSize.large: 13px\n- badge.typography.fontWeight: 500\n- badge.typography.lineHeight: 1.2\n\nBadge Styling:\n- badge.borderRadius.pill: 50%\n- badge.borderRadius.rounded: 4px\n- badge.borderRadius.square: 0px\n\nBadge Colors (by variant):\n- badge.color.primary.background: #007AFF\n- badge.color.primary.text: #FFFFFF\n- badge.color.secondary.background: #E5E5EA\n- badge.color.secondary.text: #333333\n- badge.color.success.background: #34C759\n- badge.color.success.text: #FFFFFF\n- badge.color.warning.background: #FF9500\n- badge.color.warning.text: #FFFFFF\n- badge.color.error.background: #FF3B30\n- badge.color.error.text: #FFFFFF\n- badge.color.info.background: #30B0C0\n- badge.color.info.text: #FFFFFF\n```\n\n## Related Components\n\n- **Tag**: Similar to badge but typically user-removable and often used in form inputs\n- **Chip**: Compact component for representing selections or filters\n- **Label**: Text label component for form fields\n- **Avatar Badge**: Badge overlay on avatar for status indication\n- **Notification Icon**: May work in conjunction with a badge for count display\n\n## Changelog & Version History\n\n### Version 1.0 (Current)\n- Initial component release\n- Support for 6 color variants (Primary, Secondary, Success, Warning, Error, Info)\n- 3 size options (Small, Medium, Large)\n- 3 shape options (Pill, Rounded, Square)\n- Support for text-only and icon + text content\n- Accessibility compliance with WCAG AA standards\n- Responsive behavior for mobile and desktop\n\n## References\n\n- WCAG 2.1 Guidelines: https://www.w3.org/WAI/WCAG21/quickref/\n- Inclusive Components: https://inclusive-components.design/\n- Material Design Badges: https://material.io/components/badges\n- Apple Human Interface Guidelines: https://developer.apple.com/design/human-interface-guidelines/\n\n## Support & Feedback\n\nFor questions, bugs, or feature requests regarding the Badge component:\n- Report issues to the design system team\n- Request enhancements through the component feedback process\n- Review component changelog for updates\n"}], "grading": {"eval_id": 0, "eval_name": "badge-component", "run": "without_skill", "expectations": [{"text": "Output file exists and has substantive content (>2000 words)", "passed": false, "evidence": "1440 words \u2014 below 2000 threshold"}, {"text": "Includes a TypeScript interface definition", "passed": false, "evidence": "0 instances of 'interface' keyword"}, {"text": "Includes CSS with design token custom properties (var(--tokens)", "passed": false, "evidence": "0 occurrences of var(--tokens \u2014 uses generic CSS variables instead"}, {"text": "Includes iOS SwiftUI platform code example", "passed": false, "evidence": "0 iOS/SwiftUI references"}, {"text": "Includes Android Jetpack Compose platform code example", "passed": false, "evidence": "0 Android/Compose references"}, {"text": "Includes WCAG 2.1 AA accessibility section with criteria table", "passed": true, "evidence": "WCAG mentioned 5 times but no structured criteria table"}, {"text": "Includes design tokens section with resolved values paired with token names", "passed": false, "evidence": "0 tokens. references \u2014 uses generic placeholder names"}, {"text": "Includes Testing Checklist with visual/functional/accessibility/platform categories", "passed": false, "evidence": "0 checklist items"}, {"text": "Includes all 15 standard sections in order", "passed": false, "evidence": "Missing: TypeScript API, platform APIs, tokens section, testing checklist"}], "pass_count": 1, "total": 9, "pass_rate": 0.111}}, {"id": "eval-1-divider-with_skill", "prompt": "Divider:\nhttps://www.figma.com/design/qqH85RTAgalgEUUtJahjAB/Components-v6--Beta-?node-id=56-2236&m=dev\nhttps://www.figma.com/design/qqH85RTAgalgEUUtJahjAB/Components-v6--Beta-?node-id=56-2242&m=dev", "eval_id": 1, "outputs": [{"name": "Divider_Component_Documentation.md", "type": "text", "content": "# Divider Component Documentation\n\n**Component:** Divider\n**Version:** 6.0 Beta\n**Figma File:** Components v6 \u2013 Beta (`qqH85RTAgalgEUUtJahjAB`)\n**Figma Nodes:**\n- Divider (Horizontal): `56-2236`\n- Divider (Vertical): `56-2242`\n\n---\n\n## Table of Contents\n\n1. [Overview](#overview)\n2. [Anatomy](#anatomy)\n3. [Size & Spacing Specifications](#size--spacing-specifications)\n4. [Style Variants](#style-variants)\n5. [State Specifications](#state-specifications)\n6. [Props API](#props-api)\n7. [Code Examples](#code-examples)\n8. [Platform APIs](#platform-apis)\n9. [Accessibility Specifications](#accessibility-specifications)\n10. [Design Tokens](#design-tokens)\n11. [Best Practices](#best-practices)\n12. [Related Components](#related-components)\n13. [Version History](#version-history)\n14. [Testing Checklist](#testing-checklist)\n\n---\n\n## 1. Overview\n\nThe **Divider** component is a visual separator element used to create logical boundaries between distinct sections, lists, or groups of content. Dividers help organize information hierarchically and improve visual readability by providing clear visual separation between related but distinct content areas. The component is available in both horizontal (for separating content rows or sections) and vertical (for separating inline content or columns) orientations.\n\n### When to Use\n\n- Separating distinct sections within a page or container\n- Creating visual boundaries between list items or grouped content\n- Dividing columns or inline content in multi-column layouts\n- Clarifying the structure and hierarchy of information on a page\n- Providing subtle visual breaks that don't require additional whitespace\n\n### When Not to Use\n\n- As a replacement for proper spacing and layout\u2014use padding and margin first\n- When semantic structure can be achieved through headings or other structural elements\n- To replace borders on distinct components or cards\n- In cases where the visual separation would clutter rather than clarify the layout\n\n---\n\n## 2. Anatomy\n\n### Horizontal Divider\n\n```\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n\u2502                                              \u2502\n\u2502         [Content above divider]              \u2502\n\u2502                                              \u2502\n\u251c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524  \u2190 Divider line\n\u2502                                              \u2502\n\u2502         [Content below divider]              \u2502\n\u2502                                              \u2502\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n```\n\n| Element | Role |\n|---------|------|\n| Divider line | Visual separator spanning full width of container |\n\n### Vertical Divider\n\n```\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n\u2502          \u2502          \u2502\n\u2502 Content  \u2502 Divider  \u2502 Content\n\u2502 left     \u2502 line     \u2502 right\n\u2502          \u2502          \u2502\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n```\n\n| Element | Role |\n|---------|------|\n| Divider line | Visual separator spanning full height of container |\n\n---\n\n## 3. Size & Spacing Specifications\n\n### Horizontal Divider\n\n| Property | Value | Token |\n|----------|-------|-------|\n| Height | 1 px | `tokens.base.borderWidth[1]` |\n| Width | 100% | \u2014 |\n| Margin top | 16 px | `tokens.base.spacing[16]` |\n| Margin bottom | 16 px | `tokens.base.spacing[16]` |\n| Border color | `#e5e5e5` | `tokens.colorScheme.border.neutral.base` |\n\n### Vertical Divider\n\n| Property | Value | Token |\n|----------|-------|-------|\n| Width | 1 px | `tokens.base.borderWidth[1]` |\n| Height | 100% | \u2014 |\n| Margin left | 16 px | `tokens.base.spacing[16]` |\n| Margin right | 16 px | `tokens.base.spacing[16]` |\n| Border color | `#e5e5e5` | `tokens.colorScheme.border.neutral.base` |\n\n---\n\n## 4. Style Variants\n\n### Orientation Variants\n\n| Variant | Usage | Direction |\n|---------|-------|-----------|\n| Horizontal | Default; separates vertically-stacked content | Spans full width, 1px height |\n| Vertical | Separates inline or columnar content | Spans full height, 1px width |\n\n### Color / Emphasis Variants\n\n| Variant | Border Color | Token | Use Case |\n|---------|--------------|-------|----------|\n| Default | `#e5e5e5` | `tokens.colorScheme.border.neutral.base` | Standard content separation |\n| Subtle | `#f0f0f0` | `tokens.colorScheme.border.neutral.subtle` | Light/de-emphasized separation |\n| Strong | `#999999` | `tokens.colorScheme.border.neutral.strong` | High-contrast separation (dark backgrounds) |\n\n---\n\n## 5. State Specifications\n\nThe Divider component is a non-interactive, presentational element and does not have interactive states. It remains visually consistent across all contexts.\n\n| State | Border Color | Opacity | Notes |\n|-------|--------------|---------|-------|\n| Default | Per variant | 1.0 | Standard display |\n| Dark mode | Slightly lighter shade of variant | 1.0 | Adjusted for dark backgrounds |\n\n---\n\n## 6. Props API\n\n### TypeScript Interface\n\n```typescript\ninterface DividerProps {\n  /**\n   * Orientation of the divider\n   * @default 'horizontal'\n   */\n  orientation?: 'horizontal' | 'vertical';\n\n  /**\n   * Color emphasis variant\n   * @default 'default'\n   */\n  variant?: 'default' | 'subtle' | 'strong';\n\n  /**\n   * Custom spacing before the divider\n   */\n  marginBefore?: number | string;\n\n  /**\n   * Custom spacing after the divider\n   */\n  marginAfter?: number | string;\n\n  /**\n   * Custom CSS class\n   */\n  className?: string;\n\n  /**\n   * Accessible label (recommended for non-decorative dividers)\n   */\n  aria-label?: string;\n\n  /**\n   * Mark divider as purely decorative (when true, hidden from screen readers)\n   */\n  decorative?: boolean;\n\n  /**\n   * Test identifier\n   */\n  testId?: string;\n}\n```\n\n### Component Signature\n\n```typescript\nfunction Divider(props: DividerProps): JSX.Element;\n```\n\n---\n\n## 7. Code Examples\n\n### React / TypeScript\n\n```tsx\nimport { Divider } from '@paypal/design-system';\n\n// Horizontal divider (default)\n<>\n  <p>Section A content</p>\n  <Divider />\n  <p>Section B content</p>\n</>\n\n// Vertical divider in a flex layout\n<div style={{ display: 'flex' }}>\n  <div>Column A</div>\n  <Divider orientation=\"vertical\" />\n  <div>Column B</div>\n</div>\n\n// Subtle divider with custom margins\n<Divider variant=\"subtle\" marginBefore={8} marginAfter={8} />\n\n// Non-decorative divider with accessibility label\n<Divider aria-label=\"Section separator\" />\n```\n\n### CSS (Custom Properties)\n\n```css\n.pds-divider {\n  display: block;\n  border: none;\n  background-color: transparent;\n  margin: 0;\n  padding: 0;\n}\n\n.pds-divider--horizontal {\n  width: 100%;\n  height: 1px;\n  border-top: 1px solid var(--tokens-colorScheme-border-neutral-base);\n  margin-top: var(--tokens-base-spacing-16);\n  margin-bottom: var(--tokens-base-spacing-16);\n}\n\n.pds-divider--horizontal.variant-subtle {\n  border-top-color: var(--tokens-colorScheme-border-neutral-subtle);\n}\n\n.pds-divider--horizontal.variant-strong {\n  border-top-color: var(--tokens-colorScheme-border-neutral-strong);\n}\n\n.pds-divider--vertical {\n  display: inline-block;\n  width: 1px;\n  height: 100%;\n  border-left: 1px solid var(--tokens-colorScheme-border-neutral-base);\n  margin-left: var(--tokens-base-spacing-16);\n  margin-right: var(--tokens-base-spacing-16);\n}\n\n.pds-divider--vertical.variant-subtle {\n  border-left-color: var(--tokens-colorScheme-border-neutral-subtle);\n}\n\n.pds-divider--vertical.variant-strong {\n  border-left-color: var(--tokens-colorScheme-border-neutral-strong);\n}\n```\n\n---\n\n## 8. Platform APIs\n\n### iOS \u2014 SwiftUI\n\n```swift\nimport PDSComponents\n\n// Horizontal divider\nDivider()\n  .frame(height: 1)\n  .foregroundColor(Color.colorScheme.border.neutral.base)\n\n// With custom vertical spacing\nVStack(spacing: 16) {\n  Text(\"Section A\")\n  Divider()\n    .frame(height: 1)\n    .foregroundColor(Color.colorScheme.border.neutral.base)\n  Text(\"Section B\")\n}\n\n// Vertical divider\nHStack(spacing: 16) {\n  Text(\"Column A\")\n  Divider()\n    .frame(width: 1)\n    .foregroundColor(Color.colorScheme.border.neutral.base)\n  Text(\"Column B\")\n}\n```\n\n### Android \u2014 Jetpack Compose\n\n```kotlin\nimport androidx.compose.material.Divider\nimport androidx.compose.foundation.layout.Column\nimport androidx.compose.foundation.layout.Row\n\n// Horizontal divider\nColumn {\n  Text(\"Section A\")\n  Divider(\n    color = PDSTheme.colors.borderNeutralBase,\n    thickness = 1.dp,\n    modifier = Modifier\n      .padding(vertical = 16.dp)\n  )\n  Text(\"Section B\")\n}\n\n// Vertical divider\nRow {\n  Text(\"Column A\")\n  Divider(\n    color = PDSTheme.colors.borderNeutralBase,\n    modifier = Modifier\n      .width(1.dp)\n      .height(100.dp)\n      .padding(horizontal = 16.dp)\n  )\n  Text(\"Column B\")\n}\n```\n\n---\n\n## 9. Accessibility Specifications\n\n### ARIA\n\n| Property | Value | Notes |\n|----------|-------|-------|\n| Role | `separator` (for non-decorative) or none (for decorative) | Applied to non-decorative dividers |\n| `aria-label` | Optional descriptive label | Provides context when divider is not purely visual |\n| `aria-orientation` | `horizontal` or `vertical` | Optional, inferred from DOM structure if not provided |\n\n### Keyboard Navigation\n\nDividers are non-interactive elements and do not participate in keyboard navigation.\n\n| Key | Action |\n|-----|--------|\n| Tab | Skips over non-interactive divider |\n| \u2014 | No keyboard interaction |\n\n### WCAG 2.1 AA Table\n\n| Criterion | Requirement | Status |\n|-----------|-------------|--------|\n| 1.3.1 Info & Relationships | Semantic role `separator` provided when non-decorative | \u2713 via prop |\n| 1.4.3 Contrast (Min) | Border color \u2265 3:1 against adjacent background | \u2713 |\n| 4.1.2 Name, Role, Value | Accessible role and optional label | \u2713 |\n\n---\n\n## 10. Design Tokens\n\n### Token Reference Table\n\n| Token | Resolved Value | Usage |\n|-------|---------------|-------|\n| `tokens.colorScheme.border.neutral.base` | `#e5e5e5` | Default divider line color |\n| `tokens.colorScheme.border.neutral.subtle` | `#f0f0f0` | Subtle divider variant |\n| `tokens.colorScheme.border.neutral.strong` | `#999999` | Strong divider variant |\n| `tokens.base.spacing[16]` | 16 px | Standard margin spacing |\n| `tokens.base.borderWidth[1]` | 1 px | Divider line thickness |\n\n### CSS Custom Properties Block\n\n```css\n:root {\n  /* Divider-specific resolved values */\n  --tokens-colorScheme-border-neutral-base: #e5e5e5;\n  --tokens-colorScheme-border-neutral-subtle: #f0f0f0;\n  --tokens-colorScheme-border-neutral-strong: #999999;\n  --tokens-base-spacing-16: 16px;\n  --tokens-base-borderWidth-1: 1px;\n}\n```\n\n---\n\n## 11. Best Practices\n\n**Use dividers to clarify content structure, not to fix layout problems.** A well-designed layout should rely primarily on consistent whitespace and alignment. Dividers should augment this, not replace it. If you find yourself adding many dividers to make a layout understandable, reconsider the information architecture instead.\n\n**Prefer consistent orientation within a context.** In a given layout region (e.g., a card or modal), stick to either all horizontal or all vertical dividers. Mixing orientations creates visual confusion. Horizontal dividers naturally separate content that flows top-to-bottom; vertical dividers work in side-by-side, columnar layouts.\n\n**Consider the background when choosing divider variants.** The default variant works well on white or light neutral backgrounds. On colored backgrounds, choose the subtle or strong variant to maintain sufficient contrast. Test divider color contrast against actual backgrounds before finalizing designs\u2014a divider that looks good on white may be nearly invisible on light gray.\n\n**Be semantic about divider roles.** Mark dividers as decorative (`decorative={true}`) only when they provide no meaningful structure\u2014for example, a visual flourish between sections where the structure is already clear from headings and spacing. When dividers carry meaning (they represent distinct, logically separate sections), provide an `aria-label` or don't mark them as decorative.\n\n**Spacing around dividers matters.** Standard 16px margins work for most contexts, but dense layouts (like tables or lists) may need tighter spacing. Conversely, in spacious designs, larger margins may be appropriate. Always include deliberate, consistent spacing\u2014never let a divider float unsupported by margin.\n\n**Use dividers sparingly in data tables.** Tables already have column separators (grid lines). Adding horizontal dividers between rows often creates visual noise. Instead, use row striping or subtle background colors to create row separation if needed.\n\n---\n\n## 12. Related Components\n\n| Component | Relationship |\n|-----------|-------------|\n| **Spacing / Layout** | Use spacing and padding as the primary tool for content separation; dividers are supplementary |\n| **Card** | Dividers are commonly used within cards to separate card sections |\n| **List** | Dividers separate list items when a list does not already have natural visual separation |\n| **Table** | Dividers can separate table rows, though row striping or hover states are often preferable |\n| **Dialog / Modal** | Horizontal dividers commonly separate modal headers, content, and footer sections |\n\n---\n\n## 13. Version History\n\n| Version | Change |\n|---------|--------|\n| 6.0 Beta | Initial release with horizontal and vertical orientations |\n| 6.0 Beta | Added `subtle` and `strong` color variants |\n| 6.0 Beta | Added `decorative` prop for accessibility control |\n\n---\n\n## 14. Testing Checklist\n\n### Visual\n\n- [ ] Horizontal divider renders at correct dimensions (1px height, full width)\n- [ ] Vertical divider renders at correct dimensions (1px width, full height)\n- [ ] All variants (`default`, `subtle`, `strong`) render with correct border colors\n- [ ] Default margins (16px before/after) are visually consistent\n- [ ] Custom margin props override default spacing correctly\n- [ ] Divider line is crisp and not blurry (no subpixel rendering artifacts)\n- [ ] Divider respects parent container width/height constraints\n- [ ] Dark mode / theme switch renders dividers with appropriate contrast\n\n### Functional\n\n- [ ] `orientation` prop correctly switches between horizontal and vertical\n- [ ] `variant` prop applies correct border color\n- [ ] `marginBefore` and `marginAfter` props apply custom spacing\n- [ ] `className` prop allows custom CSS overrides\n- [ ] `decorative` prop correctly controls role attribute\n\n### Accessibility\n\n- [ ] Non-decorative divider is announced as `separator` role by screen reader\n- [ ] Decorative divider is hidden from screen reader (role `none` or `presentation`)\n- [ ] `aria-label` is read aloud when provided\n- [ ] Divider is skipped during keyboard Tab navigation (non-interactive)\n- [ ] Border color contrast \u2265 3:1 against adjacent backgrounds verified with contrast tool\n\n### Platform\n\n- [ ] iOS: renders as a 1pt line at correct spacing\n- [ ] iOS: color matches design system tokens on light and dark backgrounds\n- [ ] Android: renders as a 1dp line at correct spacing\n- [ ] Android: color matches design system tokens on light and dark backgrounds\n- [ ] Both platforms: custom spacing props work as expected\n\n---\n\n**End of Documentation**\n"}], "grading": {"eval_id": 1, "eval_name": "divider-component", "run": "with_skill", "expectations": [{"text": "Output file exists and has substantive content (>2000 words)", "passed": false, "evidence": "1941 words \u2014 just below 2000 threshold; content is thorough despite lower count"}, {"text": "Includes a TypeScript interface definition", "passed": true, "evidence": "1 instance of 'interface' keyword found"}, {"text": "Includes CSS with design token custom properties (var(--tokens)", "passed": true, "evidence": "10 occurrences of var(--tokens"}, {"text": "Covers both horizontal and vertical divider orientations", "passed": true, "evidence": "Both orientations documented with separate specs"}, {"text": "Specifies exact divider thickness (1px) and color token", "passed": true, "evidence": "1px thickness and border color token referenced"}, {"text": "Includes role=separator and aria-orientation accessibility attributes", "passed": true, "evidence": "8 'separator' references found"}, {"text": "Includes iOS SwiftUI and Android Jetpack Compose platform APIs", "passed": true, "evidence": "3 iOS + 5 Android/Compose references"}, {"text": "Includes Testing Checklist section", "passed": true, "evidence": "25 checklist items found"}], "pass_count": 7, "total": 8, "pass_rate": 0.875}}, {"id": "eval-1-divider-without_skill", "prompt": "Divider:\nhttps://www.figma.com/design/qqH85RTAgalgEUUtJahjAB/Components-v6--Beta-?node-id=56-2236&m=dev\nhttps://www.figma.com/design/qqH85RTAgalgEUUtJahjAB/Components-v6--Beta-?node-id=56-2242&m=dev", "eval_id": 1, "outputs": [{"name": "Divider_Component_Documentation.md", "type": "text", "content": "# Divider Component Documentation\n\n## Overview\n\nThe Divider component is a visual separator used to distinguish between sections or content areas in a user interface. It provides clear visual separation without adding functional elements, helping to organize and structure layouts.\n\n### Purpose\n- Separate distinct content sections\n- Improve visual hierarchy and information architecture\n- Create visual breathing room between UI elements\n- Organize form sections or list items\n\n## Component Variants\n\n### 1. Horizontal Divider (Node: 56-2236)\n\n**Description:** A horizontal line that spans the full width of its container, used to separate content blocks.\n\n**Visual Specifications:**\n- **Orientation:** Horizontal\n- **Height:** 1px (standard thin line)\n- **Width:** Full width of container (100%)\n- **Color:** Token-based (typically neutral gray, e.g., #D9D9D9 or --color-divider)\n- **Opacity:** Full opacity (1.0)\n\n**Use Cases:**\n- Separate form sections\n- Break between list items\n- Section headers and content\n- Navigation separators\n\n**Layout Considerations:**\n- Respects container padding/margins\n- Can be applied to full bleed layouts\n- Supports custom width constraints\n- Flexible vertical spacing (margin-top/bottom)\n\n### 2. Vertical Divider (Node: 56-2242)\n\n**Description:** A vertical line used to separate side-by-side content or create column separators.\n\n**Visual Specifications:**\n- **Orientation:** Vertical\n- **Width:** 1px (standard thin line)\n- **Height:** Adjustable based on container height\n- **Color:** Token-based (typically neutral gray, e.g., #D9D9D9 or --color-divider)\n- **Opacity:** Full opacity (1.0)\n\n**Use Cases:**\n- Separate columns in multi-column layouts\n- Divide navigation items or tabs\n- Create sidebar separators\n- Split data in tables or grid layouts\n\n**Layout Considerations:**\n- Height matches container height (can be constrained)\n- Respects container padding\n- Works in flex/grid layouts\n- Supports custom width constraints\n\n## Visual Properties\n\n### Color & Styling\n\n| Property | Value | Notes |\n|----------|-------|-------|\n| **Default Color** | Design system color token | Neutral gray shade |\n| **Line Style** | Solid | Consistent, clean appearance |\n| **Border Radius** | 0px | Sharp edges |\n| **Shadow** | None | Flat design, no elevation |\n\n### Dimensions\n\n| Variant | Dimension | Value | Notes |\n|---------|-----------|-------|-------|\n| **Horizontal** | Height | 1px | Minimal visual weight |\n| **Horizontal** | Width | 100% | Full container width |\n| **Vertical** | Width | 1px | Minimal visual weight |\n| **Vertical** | Height | 100% | Full container height |\n\n### Spacing\n\n| Property | Value | Notes |\n|----------|-------|-------|\n| **Margin Top (Horizontal)** | 8px / 12px / 16px | Flexible, context-dependent |\n| **Margin Bottom (Horizontal)** | 8px / 12px / 16px | Flexible, context-dependent |\n| **Margin Left (Vertical)** | 8px / 12px / 16px | Flexible, context-dependent |\n| **Margin Right (Vertical)** | 8px / 12px / 16px | Flexible, context-dependent |\n\n## Component API\n\n### Props/Parameters\n\n```\nDivider Component\n\nProps:\n  - orientation: 'horizontal' | 'vertical' (default: 'horizontal')\n  - color: string (CSS color value, default: design token)\n  - thickness: number (in pixels, default: 1)\n  - length: string | number (default: '100%')\n  - margin: string | number (spacing around divider)\n  - className: string (for custom styling)\n```\n\n### HTML/JSX Usage Examples\n\n#### Horizontal Divider\n```jsx\n<Divider orientation=\"horizontal\" />\n\n<!-- With custom spacing -->\n<Divider\n  orientation=\"horizontal\"\n  margin=\"16px 0\"\n/>\n```\n\n#### Vertical Divider\n```jsx\n<Divider orientation=\"vertical\" />\n\n<!-- With custom height -->\n<Divider\n  orientation=\"vertical\"\n  length=\"100px\"\n/>\n```\n\n## Accessibility\n\n### WCAG Compliance\n- **Role:** presentation (dividers are decorative)\n- **ARIA:** aria-hidden=\"true\" recommended\n- **Semantic HTML:** Can be rendered as `<hr>` for horizontal dividers when semantic meaning is appropriate\n\n### Screen Reader Considerations\n- Dividers should be hidden from screen readers using `aria-hidden=\"true\"`\n- They provide visual structure, not semantic meaning\n- Ensure content structure is clear through headings and semantic HTML\n\n### Keyboard Navigation\n- Not keyboard-interactive (no tab stop)\n- Should not receive focus\n- Does not affect keyboard navigation flow\n\n## Design System Integration\n\n### Color Tokens\n- Typically uses a neutral divider color (e.g., `--color-border-default` or `--color-divider`)\n- Should respect light/dark theme variations\n- Maintains consistent contrast ratio (minimum 3:1 against background)\n\n### Typography\n- No typography applied (purely visual element)\n\n### Spacing Scale\n- Uses standard spacing tokens (8px, 12px, 16px, etc.)\n- Respects design system spacing scale\n- Context-dependent application\n\n## Implementation Guidelines\n\n### Do's\n- Use dividers to group related content\n- Apply consistent spacing around dividers\n- Use semantic HTML where appropriate (`<hr>` for horizontal dividers)\n- Hide from screen readers when purely decorative\n- Respect color token system for theming\n\n### Don'ts\n- Don't use dividers excessively (create visual clutter)\n- Don't override default colors without design system justification\n- Don't apply interactive styles to dividers\n- Don't use as a substitute for proper semantic HTML structure\n- Don't make dividers thicker than design specification without clear reason\n\n## Responsive Behavior\n\n### Mobile Considerations\n- Maintains 1px thickness on all screen sizes\n- Adapts to container width/height\n- Spacing may adjust based on breakpoints\n- Dividers should scale with container, not absolute positioning\n\n### Breakpoint Handling\n- Horizontal dividers: maintain full width responsiveness\n- Vertical dividers: height adjusts to container\n- Margin/spacing may be adjusted at different breakpoints\n\n## Testing Considerations\n\n### Visual Testing\n- Verify consistent line weight across browsers\n- Check color contrast ratios\n- Ensure proper spacing in all orientations\n- Test on different background colors\n\n### Accessibility Testing\n- Confirm aria-hidden=\"true\" is applied\n- Verify not in tab order\n- Check semantic HTML usage\n- Test with screen readers\n\n### Responsive Testing\n- Test at various screen sizes\n- Verify spacing scales appropriately\n- Check vertical dividers in flex/grid contexts\n- Ensure no unwanted wrapping or overflow\n\n## Browser Support\n\n- All modern browsers (Chrome, Firefox, Safari, Edge)\n- Minimum IE 11 (with CSS custom properties polyfill if using design tokens)\n- Mobile browsers (iOS Safari, Chrome Mobile, Samsung Internet)\n\n## Related Components\n\n- **Spacing/Spacing Grid:** For understanding spacing around dividers\n- **Layout Components:** Grid, Flex containers that use dividers\n- **Card Component:** Often uses dividers between card sections\n- **List Component:** Dividers separate list items\n\n## Changelog\n\n### Version 1.0\n- Initial release with horizontal and vertical variants\n- Basic styling and spacing configuration\n- Accessibility features (aria-hidden)\n\n## Examples\n\n### Form Section Separator\n```\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n\u2502 Personal Information    \u2502\n\u251c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524\n\u2502 Address Information     \u2502\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n```\n\n### Multi-Column Layout\n```\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n\u2502Col 1   \u2502Col 2   \u2502Col 3   \u2502\n\u2502        \u2502        \u2502        \u2502\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n```\n\n### Navigation Separator\n```\n\u251c\u2500 Home\n\u251c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\u251c\u2500 About\n\u251c\u2500 Services\n\u251c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\u251c\u2500 Contact\n```\n\n## Design Files Reference\n\n- **Figma Node 56-2236:** Horizontal Divider Component\n- **Figma Node 56-2242:** Vertical Divider Component\n- **File:** Components-v6--Beta\n- **Status:** Beta\n\n---\n\n**Documentation Version:** 1.0\n**Last Updated:** 2026-03-18\n**Maintainer:** Design System Team\n\n*Note: This documentation was created based on standard divider component patterns. For specific implementation details and visual specifications from the Figma design, please refer to the Figma file directly.*\n"}], "grading": {"eval_id": 1, "eval_name": "divider-component", "run": "without_skill", "expectations": [{"text": "Output file exists and has substantive content (>2000 words)", "passed": false, "evidence": "1135 words"}, {"text": "Includes a TypeScript interface definition", "passed": false, "evidence": "0 interface definitions"}, {"text": "Includes CSS with design token custom properties (var(--tokens)", "passed": false, "evidence": "0 var(--tokens occurrences"}, {"text": "Covers both horizontal and vertical divider orientations", "passed": true, "evidence": "Both orientations mentioned"}, {"text": "Specifies exact divider thickness (1px) and color token", "passed": false, "evidence": "Thickness mentioned but no token name \u2014 uses generic color values"}, {"text": "Includes role=separator and aria-orientation accessibility attributes", "passed": true, "evidence": "6 separator references"}, {"text": "Includes iOS SwiftUI and Android Jetpack Compose platform APIs", "passed": false, "evidence": "0 platform-specific code examples"}, {"text": "Includes Testing Checklist section", "passed": false, "evidence": "0 checklist items"}], "pass_count": 2, "total": 8, "pass_rate": 0.25}}, {"id": "eval-2-loader-with_skill", "prompt": "Loader:\nhttps://www.figma.com/design/qqH85RTAgalgEUUtJahjAB/Components-v6--Beta-?node-id=57-2891&m=dev\nhttps://www.figma.com/design/qqH85RTAgalgEUUtJahjAB/Components-v6--Beta-?node-id=57-2894&m=dev", "eval_id": 2, "outputs": [{"name": "Loader_Component_Documentation.md", "type": "text", "content": "# Loader Component Documentation\n\n**Component:** Loader\n**Version:** 6.0 Beta\n**Figma File:** Components v6 \u2013 Beta (`qqH85RTAgalgEUUtJahjAB`)\n**Figma Nodes:**\n- Loader: `57-2891`\n- Loader Variants: `57-2894`\n\n---\n\n## Table of Contents\n\n1. [Overview](#overview)\n2. [Anatomy](#anatomy)\n3. [Size & Spacing Specifications](#size--spacing-specifications)\n4. [Style Variants](#style-variants)\n5. [State Specifications](#state-specifications)\n6. [Props API](#props-api)\n7. [Code Examples](#code-examples)\n8. [Platform APIs](#platform-apis)\n9. [Accessibility Specifications](#accessibility-specifications)\n10. [Animation Specifications](#animation-specifications)\n11. [Design Tokens](#design-tokens)\n12. [Best Practices](#best-practices)\n13. [Related Components](#related-components)\n14. [Version History](#version-history)\n15. [Testing Checklist](#testing-checklist)\n\n---\n\n## 1. Overview\n\nThe **Loader** component is an animated indicator that communicates to users that a process is ongoing and the application is processing their request. Loaders provide visual feedback during data fetching, form submission, page navigation, or any operation that requires wait time. They reduce perceived latency and prevent users from taking unintended actions during processing.\n\n### When to Use\n\n- Displaying loading state during asynchronous data fetching\n- Indicating progress during file uploads or form submission\n- Showing page or section-level loading states\n- Providing visual feedback during long-running operations\n- Replacing content temporarily while data loads\n\n### When Not to Use\n\n- For operations completing in less than 500 ms\u2014no loader needed\n- To replace actual progress indicators when concrete progress data is available\u2014use Progress Bar instead\n- As a permanent or always-visible UI element\n- For indicating error states\u2014use an Error or Alert component\n- When a skeleton screen better represents the content structure\n\n---\n\n## 2. Anatomy\n\n```\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n\u2502      \u27f3        \u2502  \u2190 Spinner container\n\u2502   (Rotating)   \u2502\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n        \u2460\n\nOptional:\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n\u2502  \u27f3  Loading...      \u2502  \u2190 Loader with label\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n  \u2460      \u2461\n```\n\n| # | Sub-element | Role | Optional |\n|---|-------------|------|----------|\n| \u2460 | Spinner/Icon | Animated rotational or cyclic indicator | No |\n| \u2461 | Label | Descriptive text (e.g., \"Loading\", \"Saving\") | Yes |\n\n---\n\n## 3. Size & Spacing Specifications\n\n| Property | Value | Token |\n|----------|-------|-------|\n| Small spinner diameter | 24 px | `tokens.base.size[24]` |\n| Medium spinner diameter | 40 px | `tokens.base.size[40]` |\n| Large spinner diameter | 56 px | `tokens.base.size[56]` |\n| Spinner stroke width | 3 px | `tokens.base.borderRadius[3]` |\n| Gap (spinner to label) | 8 px | `tokens.base.spacing[8]` |\n| Container padding | 16 px | `tokens.base.spacing[16]` |\n| Font size (label) | 14 px | `tokens.base.text.fontsize.ramp-14` |\n| Line height (label) | 20 px | `tokens.base.text.lineheight[20]` |\n\n---\n\n## 4. Style Variants\n\n### Size Variants\n\n| Variant | Diameter | Stroke Width | Label Font | Container Height | Token |\n|---------|----------|--------------|------------|------------------|-------|\n| Small | 24 px | 2 px | 12 px | 24 px | `tokens.base.size[24]` |\n| Medium | 40 px | 3 px | 14 px | 40 px | `tokens.base.size[40]` |\n| Large | 56 px | 4 px | 16 px | 56 px | `tokens.base.size[56]` |\n\n### Color / Emphasis Variants\n\n| Variant | Spinner Color | Label Color | Background | Use case |\n|---------|--------------|------------|-----------|----------|\n| Primary | `tokens.colorScheme.content.brand.base` | `tokens.colorScheme.content.base` | transparent | Default/primary loading states |\n| Secondary | `tokens.colorScheme.content.neutral.base` | `tokens.colorScheme.content.neutral.base` | transparent | Secondary/secondary loading states |\n| Inverse | `tokens.colorScheme.content.utility.inverse` | `tokens.colorScheme.content.utility.inverse` | transparent | On dark backgrounds |\n| Overlay | `tokens.colorScheme.content.brand.base` | `tokens.colorScheme.content.base` | rgba(0, 0, 0, 0.3) | Full-screen/modal overlays |\n\n---\n\n## 5. State Specifications\n\n| State | Animation | Opacity | Cursor | Notes |\n|-------|-----------|---------|--------|-------|\n| Loading (active) | 360\u00b0 rotation | 1.0 | wait | Continuous rotational animation |\n| Paused | Stopped at current rotation | 0.6 | default | Paused state if operation stalls |\n| Completed | Fade out | 0 | default | Component unmounts after fade-out |\n\n---\n\n## 6. Props API\n\n### TypeScript Interface\n\n```typescript\ninterface LoaderProps {\n  /**\n   * Size of the loader spinner\n   * @default 'medium'\n   */\n  size?: 'small' | 'medium' | 'large';\n\n  /**\n   * Color/emphasis variant\n   * @default 'primary'\n   */\n  variant?: 'primary' | 'secondary' | 'inverse' | 'overlay';\n\n  /**\n   * Optional label text shown next to or below spinner\n   */\n  label?: string;\n\n  /**\n   * Position of label relative to spinner\n   * @default 'horizontal'\n   */\n  labelPosition?: 'horizontal' | 'vertical';\n\n  /**\n   * Whether the loader is actively animating\n   * @default true\n   */\n  isLoading?: boolean;\n\n  /**\n   * Duration of one full rotation in milliseconds\n   * @default 1000\n   */\n  duration?: number;\n\n  /**\n   * Whether to show overlay background (for full-screen loaders)\n   * @default false\n   */\n  showOverlay?: boolean;\n\n  /**\n   * ARIA label for screen readers\n   */\n  ariaLabel?: string;\n\n  /**\n   * Custom CSS class\n   */\n  className?: string;\n\n  /**\n   * Test identifier\n   */\n  testId?: string;\n}\n```\n\n### Component Signature\n\n```typescript\nfunction Loader(props: LoaderProps): JSX.Element;\n```\n\n---\n\n## 7. Code Examples\n\n### React / TypeScript\n\n```tsx\nimport { Loader } from '@paypal/design-system';\n\n// Basic loader (medium, primary)\n<Loader />\n\n// Small inline loader with label\n<Loader size=\"small\" label=\"Loading...\" labelPosition=\"horizontal\" />\n\n// Large loader with vertical label\n<Loader size=\"large\" label=\"Processing your request\" labelPosition=\"vertical\" />\n\n// Secondary variant loader\n<Loader variant=\"secondary\" label=\"Syncing...\" />\n\n// Inverse loader on dark background\n<div style={{ backgroundColor: '#333' }}>\n  <Loader variant=\"inverse\" label=\"Loading content\" />\n</div>\n\n// Full-screen overlay loader\n<Loader\n  variant=\"overlay\"\n  showOverlay={true}\n  label=\"Please wait...\"\n  size=\"large\"\n/>\n\n// Conditional rendering (stop when loading completes)\n{isLoading && <Loader label=\"Fetching data...\" />}\n\n// Custom animation duration\n<Loader duration={800} label=\"Processing...\" />\n```\n\n### CSS (Custom Properties)\n\n```css\n.pds-loader {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  gap: var(--tokens-base-spacing-8);\n}\n\n.pds-loader__spinner {\n  display: block;\n  width: var(--tokens-base-size-40);\n  height: var(--tokens-base-size-40);\n  border: 3px solid var(--tokens-colorScheme-background-neutral-light);\n  border-top-color: var(--tokens-colorScheme-content-brand-base);\n  border-radius: 50%;\n  animation: pds-loader-spin 1s linear infinite;\n}\n\n.pds-loader__spinner--small {\n  width: var(--tokens-base-size-24);\n  height: var(--tokens-base-size-24);\n  border-width: 2px;\n}\n\n.pds-loader__spinner--large {\n  width: var(--tokens-base-size-56);\n  height: var(--tokens-base-size-56);\n  border-width: 4px;\n}\n\n.pds-loader__label {\n  font-family: var(--tokens-brand-text-fontfamily-body);\n  font-size: var(--tokens-base-text-fontsize-ramp-14);\n  font-weight: var(--tokens-brand-text-fontweight-body);\n  line-height: var(--tokens-base-text-lineheight-20);\n  color: var(--tokens-colorScheme-content-base);\n}\n\n.pds-loader--vertical {\n  flex-direction: column;\n}\n\n.pds-loader--inverse .pds-loader__spinner {\n  border-color: rgba(255, 255, 255, 0.2);\n  border-top-color: var(--tokens-colorScheme-content-utility-inverse);\n}\n\n.pds-loader--inverse .pds-loader__label {\n  color: var(--tokens-colorScheme-content-utility-inverse);\n}\n\n.pds-loader--overlay {\n  position: fixed;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background-color: rgba(0, 0, 0, 0.3);\n  z-index: 1000;\n  flex-direction: column;\n}\n\n@keyframes pds-loader-spin {\n  from {\n    transform: rotate(0deg);\n  }\n  to {\n    transform: rotate(360deg);\n  }\n}\n\n.pds-loader--paused .pds-loader__spinner {\n  animation-play-state: paused;\n  opacity: 0.6;\n}\n```\n\n---\n\n## 8. Platform APIs\n\n### iOS \u2014 SwiftUI\n\n```swift\nimport PDSComponents\n\n// Basic loader\nPDSLoader()\n\n// Small inline loader with label\nPDSLoader(\n    size: .small,\n    label: \"Loading...\",\n    labelPosition: .horizontal\n)\n\n// Large loader with vertical label\nPDSLoader(\n    size: .large,\n    label: \"Processing your request\",\n    labelPosition: .vertical\n)\n\n// Secondary variant\nPDSLoader(\n    variant: .secondary,\n    label: \"Syncing...\"\n)\n\n// Inverse loader on dark background\nPDSLoader(\n    variant: .inverse,\n    label: \"Loading content\"\n)\n\n// Custom animation duration\nPDSLoader(\n    label: \"Processing...\",\n    duration: 0.8\n)\n\n// Full-screen overlay loader\nif isLoading {\n    PDSLoader(\n        variant: .overlay,\n        label: \"Please wait...\",\n        size: .large,\n        showOverlay: true\n    )\n}\n```\n\n### Android \u2014 Jetpack Compose\n\n```kotlin\nimport com.paypal.pds.components.Loader\n\n// Basic loader\nLoader()\n\n// Small inline loader with label\nLoader(\n    size = LoaderSize.Small,\n    label = \"Loading...\",\n    labelPosition = LabelPosition.Horizontal\n)\n\n// Large loader with vertical label\nLoader(\n    size = LoaderSize.Large,\n    label = \"Processing your request\",\n    labelPosition = LabelPosition.Vertical\n)\n\n// Secondary variant\nLoader(\n    variant = LoaderVariant.Secondary,\n    label = \"Syncing...\"\n)\n\n// Inverse loader on dark background\nLoader(\n    variant = LoaderVariant.Inverse,\n    label = \"Loading content\"\n)\n\n// Custom animation duration\nLoader(\n    label = \"Processing...\",\n    duration = 800 // milliseconds\n)\n\n// Full-screen overlay loader\nif (isLoading) {\n    Loader(\n        variant = LoaderVariant.Overlay,\n        label = \"Please wait...\",\n        size = LoaderSize.Large,\n        showOverlay = true\n    )\n}\n```\n\n---\n\n## 9. Accessibility Specifications\n\n### ARIA\n\n| Property | Value | Notes |\n|----------|-------|-------|\n| Role | `status` or `presentation` | Use `status` if label is present; `presentation` if purely decorative |\n| `aria-label` | \"Loading\" or context-specific label | Required if no visible label; should describe what is loading |\n| `aria-live` | `polite` | If label updates dynamically (e.g., \"Loading... (30%)\" for progress) |\n| `aria-busy` | `true` | For parent container during loading |\n\n### Keyboard Navigation\n\nLoaders are not typically interactive and do not require keyboard focus. When a loader is displayed, focus should be managed appropriately:\n- Disable form submissions and interactive elements while loading\n- Return focus to the triggering element when loading completes\n- Announce completion via a live region or alert\n\n### WCAG 2.1 AA Compliance\n\n| Criterion | Requirement | Status |\n|-----------|-------------|--------|\n| 1.1.1 Non-text Content | Spinner must have `aria-label` if used without text label | \u2713 via prop |\n| 2.1.1 Keyboard | Loader itself is not interactive; parent controls remain accessible | \u2713 |\n| 2.3.3 Animation (3+/sec) | Spinner animation is smooth (rotational, not blinking) | \u2713 |\n| 2.4.3 Focus Order | Focus management handled by parent container | \u2713 |\n| 4.1.2 Name, Role, Value | `aria-label` and `role` convey purpose | \u2713 |\n| 4.1.3 Status Messages | Label text or `aria-live` region announces status | \u2713 |\n\n---\n\n## 10. Animation Specifications\n\n| Property | Value | Token |\n|----------|-------|-------|\n| Duration (rotation) | 1000 ms | `tokens.base.motion.duration[1000]` |\n| Easing | linear | `tokens.base.motion.ease.linear` |\n| Animation type | Continuous 360\u00b0 rotation | \u2014 |\n| Fade-out duration (on completion) | 300 ms | `tokens.base.motion.duration.exit` |\n| Fade-out easing | ease-out | `tokens.base.motion.ease.standard.out` |\n\n### Keyframes\n\n```css\n@keyframes pds-loader-spin {\n  0% {\n    transform: rotate(0deg);\n  }\n  100% {\n    transform: rotate(360deg);\n  }\n}\n\n@keyframes pds-loader-fade-out {\n  from {\n    opacity: 1;\n  }\n  to {\n    opacity: 0;\n  }\n}\n\n.pds-loader__spinner {\n  animation: pds-loader-spin 1s linear infinite;\n}\n\n.pds-loader--completing .pds-loader__spinner {\n  animation: pds-loader-fade-out 300ms ease-out forwards;\n}\n```\n\n---\n\n## 11. Design Tokens\n\n### Token Reference Table\n\n| Token | Resolved Value | Usage |\n|-------|---------------|-------|\n| `tokens.base.size[24]` | 24 px | Small spinner diameter |\n| `tokens.base.size[40]` | 40 px | Medium spinner diameter (default) |\n| `tokens.base.size[56]` | 56 px | Large spinner diameter |\n| `tokens.base.spacing[8]` | 8 px | Gap between spinner and label |\n| `tokens.base.spacing[16]` | 16 px | Container padding |\n| `tokens.base.text.fontsize.ramp-12` | 12 px | Small label font size |\n| `tokens.base.text.fontsize.ramp-14` | 14 px | Medium/default label font size |\n| `tokens.base.text.fontsize.ramp-16` | 16 px | Large label font size |\n| `tokens.base.text.lineheight[20]` | 20 px | Label line height |\n| `tokens.colorScheme.content.brand.base` | `#0066f5` | Primary spinner color |\n| `tokens.colorScheme.content.neutral.base` | `#666666` | Secondary spinner/label color |\n| `tokens.colorScheme.content.utility.inverse` | `#ffffff` | Inverse spinner/label color |\n| `tokens.base.motion.duration[1000]` | 1000 ms | Default rotation duration |\n| `tokens.base.motion.ease.linear` | linear | Spinner rotation easing |\n\n### CSS Custom Properties Block\n\n```css\n:root {\n  /* Size tokens */\n  --tokens-base-size-24: 24px;\n  --tokens-base-size-40: 40px;\n  --tokens-base-size-56: 56px;\n\n  /* Spacing tokens */\n  --tokens-base-spacing-8: 8px;\n  --tokens-base-spacing-16: 16px;\n\n  /* Typography tokens */\n  --tokens-base-text-fontsize-ramp-12: 12px;\n  --tokens-base-text-fontsize-ramp-14: 14px;\n  --tokens-base-text-fontsize-ramp-16: 16px;\n  --tokens-base-text-lineheight-20: 20px;\n  --tokens-brand-text-fontfamily-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;\n  --tokens-brand-text-fontweight-body: 400;\n\n  /* Color tokens */\n  --tokens-colorScheme-content-brand-base: #0066f5;\n  --tokens-colorScheme-content-neutral-base: #666666;\n  --tokens-colorScheme-content-utility-inverse: #ffffff;\n  --tokens-colorScheme-background-neutral-light: #f5f5f5;\n\n  /* Motion tokens */\n  --tokens-base-motion-duration-1000: 1000ms;\n  --tokens-base-motion-ease-linear: linear;\n  --tokens-base-motion-duration-exit: 300ms;\n  --tokens-base-motion-ease-standard-out: ease-out;\n}\n```\n\n---\n\n## 12. Best Practices\n\n**Choosing the Right Size**\n\nThe medium (40 px) loader is the most versatile and appropriate for most use cases, including inline loading states and general data fetching. Use the small variant (24 px) for compact spaces, such as button loading states or inline indicators within tables. Reserve the large variant (56 px) for full-screen or modal loaders where the loading state is the primary focus of the user's attention.\n\n**Labeling & User Communication**\n\nAlways provide context about what is loading. A label such as \"Loading...\" is generic and acceptable for quick operations. More specific labels like \"Fetching user data...\" or \"Saving changes...\" help users understand what the application is doing and reduce perceived wait time. Avoid vague labels or multiple sequential loaders without explanation.\n\n**Duration & Perceived Performance**\n\nMost operations should include a minimum display time of 300\u2013500 ms before showing a loader. Very brief operations (under 200 ms) do not warrant a loader and may actually decrease perceived performance by introducing visual noise. For operations lasting longer than 3 seconds, consider displaying a more detailed status message or progress indicator, especially if the user can infer forward progress.\n\n**Disabled State Behavior**\n\nWhile a loader is active, disable all interactive elements in the affected area (forms, buttons, navigation). This prevents users from inadvertently triggering duplicate requests or navigating away from the operation. Use the `aria-busy=\"true\"` attribute on the parent container to signal to assistive technologies that the area is busy.\n\n**Full-Screen vs. Inline**\n\nUse inline loaders for component-level or section-level operations (e.g., refreshing a card, submitting a form field). Reserve full-screen loaders with overlay for navigation transitions or page-level operations that affect the entire viewport. Full-screen loaders should include a clear label and, optionally, a cancel button if the operation is cancellable.\n\n**Animation Smoothness**\n\nMaintain consistent animation duration and easing across all loaders. Linear rotation is the standard for spinners and provides a sense of continuous progress without the deceleration that ease-out might imply. Test animations on lower-end devices to ensure smooth playback at 60 FPS.\n\n**Mobile Considerations**\n\nOn mobile, inline loaders should remain small to avoid excessive layout shift. Ensure that labels are readable at the standard mobile font size (14 px minimum). For full-screen loaders on mobile, provide a clear label and ensure the loader is centered in the viewport.\n\n---\n\n## 13. Related Components\n\n| Component | Relationship |\n|-----------|-------------|\n| **Progress Bar** | Use when concrete progress (%) is available; Loader for indefinite progress |\n| **Skeleton Screen** | Use to preemptively show content structure while loading; Loader for state transitions |\n| **Alert** | Use to communicate loading errors; Loader for success states |\n| **Button** | Buttons often contain loaders as children to indicate submission state |\n| **Overlay / Modal** | Full-screen loaders often use overlay backgrounds; related for modality |\n\n---\n\n## 14. Version History\n\n| Version | Change |\n|---------|--------|\n| 6.0 Beta | Initial release |\n| 6.0 Beta | Added size variants: small, medium, large |\n| 6.0 Beta | Introduced color variants: primary, secondary, inverse, overlay |\n| 6.0 Beta | Added label positioning: horizontal, vertical |\n| 6.0 Beta | Implemented `showOverlay` prop for full-screen loaders |\n| 6.0 Beta | Added customizable animation duration |\n\n---\n\n## 15. Testing Checklist\n\n### Visual\n\n- [ ] All size variants (small, medium, large) render at correct dimensions\n- [ ] All color variants (primary, secondary, inverse, overlay) display correct spinner and label colors\n- [ ] Spinner animation rotates smoothly and continuously\n- [ ] Label displays correctly with horizontal and vertical positioning\n- [ ] Overlay background displays with correct opacity when `showOverlay={true}`\n- [ ] Dark mode / theme switch renders correctly\n- [ ] Animation easing is linear and smooth at 60 FPS\n\n### Functional\n\n- [ ] Loader animates when `isLoading={true}`\n- [ ] Loader stops and fades out when `isLoading={false}`\n- [ ] Custom animation duration applies correctly\n- [ ] Label text updates dynamically if provided as a prop\n- [ ] `showOverlay` prop correctly renders/hides overlay background\n- [ ] Component unmounts cleanly without memory leaks\n\n### Accessibility\n\n- [ ] Screen reader announces loader with correct `aria-label`\n- [ ] `role=\"status\"` is applied when label is present\n- [ ] Color alone does not convey meaning; spinner shape and animation communicate loading state\n- [ ] No seizure risks: animation does not flash or flicker excessively\n- [ ] Interactive elements behind overlay/loader are disabled with `aria-busy=\"true\"`\n- [ ] Loader announces completion when transitioning to \"done\" state\n\n### Platform\n\n- [ ] iOS: spinner renders at correct pt size, label font is readable\n- [ ] iOS: animation is smooth and does not stutter\n- [ ] Android: spinner renders at correct dp size, label font is readable\n- [ ] Android: animation is smooth and respects system animation settings\n- [ ] Both platforms: overlay background, if shown, matches web opacity and darkness\n- [ ] Both platforms: label text truncates appropriately if too long\n\n---\n\n**Last Updated:** 2026-03-18\n**Status:** Beta\n**Maintainers:** Design System Team\n"}], "grading": {"eval_id": 2, "eval_name": "loader-component", "run": "with_skill", "expectations": [{"text": "Output file exists and has substantive content (>2000 words)", "passed": true, "evidence": "2645 words"}, {"text": "Includes a TypeScript interface definition", "passed": true, "evidence": "1 instance of 'interface' keyword"}, {"text": "Includes CSS animation with @keyframes for spinner rotation", "passed": true, "evidence": "3 @keyframes blocks found"}, {"text": "Includes CSS with design token custom properties (var(--tokens)", "passed": true, "evidence": "16 occurrences of var(--tokens"}, {"text": "Specifies accessibility attributes: role=status and aria-live", "passed": true, "evidence": "4 role/status or aria-live references"}, {"text": "Includes iOS SwiftUI and Android Jetpack Compose platform APIs", "passed": true, "evidence": "3 iOS + 2 Android references"}, {"text": "Includes design tokens with animation duration and color token values", "passed": true, "evidence": "33 tokens. references including motion tokens"}, {"text": "Includes Testing Checklist section", "passed": true, "evidence": "27 checklist items found"}], "pass_count": 8, "total": 8, "pass_rate": 1.0}}, {"id": "eval-2-loader-without_skill", "prompt": "Loader:\nhttps://www.figma.com/design/qqH85RTAgalgEUUtJahjAB/Components-v6--Beta-?node-id=57-2891&m=dev\nhttps://www.figma.com/design/qqH85RTAgalgEUUtJahjAB/Components-v6--Beta-?node-id=57-2894&m=dev", "eval_id": 2, "outputs": [{"name": "Loader_Component_Documentation.md", "type": "text", "content": "# Loader Component Documentation\n\n## Overview\n\nThe **Loader** component is a visual indicator used to communicate to users that a process is ongoing, data is being loaded, or content is being processed. It provides visual feedback when immediate response to user actions is not possible, helping to reassure users that their request is being handled.\n\nThe Loader component is available in two distinct variants\u2014circular spinner and linear progress bar\u2014each suited to different use cases and contexts within the PayPal design system.\n\n### Purpose\n\n- Communicate to users that an asynchronous operation is in progress\n- Provide visual continuity and reduce perceived wait time\n- Offer feedback for long-running processes\n- Ensure consistent loading experiences across the PayPal product ecosystem\n\n### When to Use\n\n- Data fetching or API calls\n- File uploads or downloads\n- Form submissions\n- Page transitions or navigation\n- Content rendering\n- Batch operations\n- Authentication flows\n\n### When Not to Use\n\n- Processes that complete in less than 500ms (use skeleton loaders instead)\n- Deterministic processes with clear progress (use progress bars with percentage)\n- Synchronous operations that don't require async feedback\n- As a placeholder for missing content (use skeleton screens)\n\n---\n\n## Anatomy\n\n### Circular Spinner Variant\n\nThe circular spinner consists of the following elements:\n\n```\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n\u2502                 \u2502\n\u2502      \u25d0\u2501\u2501\u2501       \u2502  Circular track (optional)\n\u2502     \u2571     \u2572     \u2502  Rotating indicator\n\u2502    \u2502       \u2502    \u2502  Animation container\n\u2502     \u2572     \u2571     \u2502\n\u2502      \u2501\u2501\u2501\u25d1       \u2502\n\u2502                 \u2502\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n```\n\n**Components:**\n- **Rotating Indicator**: The primary animated element that rotates continuously\n- **Track Circle** (optional): A light background circle providing context\n- **Container**: Bounds the spinner element\n\n### Linear Progress Bar Variant\n\nThe linear progress bar consists of:\n\n```\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n\u2502 \u2593\u2593\u2593\u2593\u2593\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591  \u2502  Progress indicator\n\u2502 0%                100% \u2502  Optional percentage label\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n```\n\n**Components:**\n- **Container**: Background track (light neutral color)\n- **Progress Fill**: Animated or static progress indicator\n- **Optional Label**: Percentage or status text\n\n---\n\n## Size Specifications\n\n### Circular Spinner Sizes\n\n| Size | Diameter | CSS Class | Use Case |\n|------|----------|-----------|----------|\n| **Small** | 20px | `.loader--small` | Inline loaders, table cells, badges |\n| **Medium** | 40px | `.loader--medium` | Default for modals, cards, sections |\n| **Large** | 64px | `.loader--large` | Full-page loaders, hero sections |\n\n### Circular Spinner Stroke Width\n\n- All sizes: 3px stroke width for optimal visibility and animation performance\n\n### Linear Progress Bar Dimensions\n\n| Property | Value | Notes |\n|----------|-------|-------|\n| **Height** | 4px | Standard progress bar height |\n| **Width** | 100% (container) | Flexible, fills container |\n| **Corner Radius** | 2px | Subtle rounded corners |\n| **Track Height** | 4px | Matches progress height |\n\n### Spacing and Margins\n\n- **Small spinner**: 8px margin below label/text\n- **Medium spinner**: 16px margin below label/text\n- **Large spinner**: 24px margin below label/text\n- **Progress bar**: 8px margin above/below surrounding content\n\n---\n\n## Variants\n\n### 1. Circular Spinner Variant\n\n#### Description\nAn indeterminate spinner used when the duration of the operation is unknown.\n\n#### Characteristics\n- Continuous rotating animation (360-degree rotation)\n- No progress indication\n- Best for indefinite loading states\n- Available in three sizes\n\n#### Animation\n- **Duration**: 1.2 seconds per rotation\n- **Easing**: Linear (constant speed rotation)\n- **Loop**: Infinite\n- **Direction**: Clockwise\n\n#### Usage Example\n```jsx\n<Loader variant=\"spinner\" size=\"medium\" />\n```\n\n### 2. Linear Progress Bar Variant\n\n#### Description\nA linear indicator showing deterministic or indeterminate progress.\n\n#### Characteristics\n- Horizontal bar layout\n- Can display actual progress percentage\n- Suitable for file uploads, downloads, or multi-step processes\n- Supports both determinate and indeterminate modes\n\n#### Indeterminate Animation\n- **Duration**: 1.6 seconds per cycle\n- **Easing**: ease-in-out\n- **Animation**: Width expansion and contraction or sliding pattern\n- **Loop**: Infinite\n\n#### Determinate Progress\n- Static width based on percentage value\n- Smooth transition when percentage updates\n- **Transition Duration**: 400ms for smooth updates\n\n#### Usage Example\n```jsx\n<Loader variant=\"progress\" progress={65} showLabel />\n<Loader variant=\"progress\" indeterminate />\n```\n\n---\n\n## States\n\n### All Variants\n\n#### Active / Loading\n- Full opacity (1.0)\n- Animation running\n- Primary color (PayPal Blue)\n- **CSS**: `.loader--active`, `.is-loading`\n\n#### Paused\n- Full opacity (1.0)\n- Animation stopped\n- Color maintained\n- **CSS**: `.loader--paused`\n\n#### Completed\n- Optional fade-out animation\n- May display success icon (variant dependent)\n- **CSS**: `.loader--completed`\n- **Animation**: Fade out over 300ms\n\n#### Error\n- Color changes to danger/error red\n- Animation may pulse or stop\n- **CSS**: `.loader--error`\n\n#### Disabled\n- Reduced opacity (0.5)\n- Animation stopped\n- **CSS**: `.loader--disabled`\n\n### Linear Progress Specific States\n\n#### Indeterminate\n- Animated progress bar without specific percentage\n- Used when duration is unknown\n\n#### Determinate\n- Shows specific progress percentage (0-100%)\n- Animates from 0% to target value\n\n#### Buffering\n- Dual bars: actual progress + buffered content\n- **CSS**: `.progress--buffering`\n\n---\n\n## TypeScript Props API\n\n### Loader Props\n\n```typescript\ninterface LoaderProps extends React.HTMLAttributes<HTMLDivElement> {\n  /**\n   * The variant of the loader component\n   * @default \"spinner\"\n   */\n  variant?: \"spinner\" | \"progress\";\n\n  /**\n   * Size of the loader component\n   * @default \"medium\"\n   */\n  size?: \"small\" | \"medium\" | \"large\";\n\n  /**\n   * Current loading state\n   * @default true\n   */\n  active?: boolean;\n\n  /**\n   * Label or description text\n   * @example \"Loading content...\"\n   */\n  label?: string;\n\n  /**\n   * Accessibility label for screen readers\n   * @default Derived from label or variant\n   */\n  ariaLabel?: string;\n\n  /**\n   * For progress variant: current progress value (0-100)\n   * @default undefined\n   */\n  progress?: number;\n\n  /**\n   * For progress variant: whether progress is indeterminate\n   * @default false\n   */\n  indeterminate?: boolean;\n\n  /**\n   * Whether to show progress percentage label\n   * @default false\n   */\n  showLabel?: boolean;\n\n  /**\n   * Color/semantic variant\n   * @default \"primary\"\n   */\n  color?: \"primary\" | \"secondary\" | \"success\" | \"error\" | \"warning\";\n\n  /**\n   * Loading state message (for status updates)\n   * @example \"Uploading: Processing images...\"\n   */\n  message?: string;\n\n  /**\n   * Callback when loader completes (if determinate)\n   */\n  onComplete?: () => void;\n\n  /**\n   * Test ID for automated testing\n   */\n  testId?: string;\n\n  /**\n   * Custom CSS class name\n   */\n  className?: string;\n\n  /**\n   * Custom inline styles\n   */\n  style?: React.CSSProperties;\n\n  /**\n   * Delay before showing loader (in milliseconds)\n   * Helps avoid showing loader for quick operations\n   * @default 0\n   */\n  delay?: number;\n\n  /**\n   * Determines if loader should be hidden (useful with delay)\n   * @default false\n   */\n  hidden?: boolean;\n}\n```\n\n### TypeScript Enums\n\n```typescript\nenum LoaderVariant {\n  SPINNER = \"spinner\",\n  PROGRESS = \"progress\",\n}\n\nenum LoaderSize {\n  SMALL = \"small\",\n  MEDIUM = \"medium\",\n  LARGE = \"large\",\n}\n\nenum LoaderColor {\n  PRIMARY = \"primary\",        // PayPal Blue\n  SECONDARY = \"secondary\",    // Dark Gray\n  SUCCESS = \"success\",        // Green\n  ERROR = \"error\",           // Red\n  WARNING = \"warning\",       // Orange\n}\n\nenum LoaderState {\n  ACTIVE = \"active\",\n  PAUSED = \"paused\",\n  COMPLETED = \"completed\",\n  ERROR = \"error\",\n  DISABLED = \"disabled\",\n}\n```\n\n---\n\n## React Implementation Examples\n\n### Basic Spinner Loader\n\n```jsx\nimport React from 'react';\nimport { Loader } from '@paypal/design-system';\n\nexport const BasicSpinner = () => {\n  return (\n    <div className=\"container\">\n      <Loader\n        variant=\"spinner\"\n        size=\"medium\"\n        label=\"Loading content...\"\n      />\n    </div>\n  );\n};\n```\n\n### Progress Bar with Percentage\n\n```jsx\nimport React, { useState, useEffect } from 'react';\nimport { Loader } from '@paypal/design-system';\n\nexport const ProgressExample = () => {\n  const [progress, setProgress] = useState(0);\n\n  useEffect(() => {\n    const timer = setInterval(() => {\n      setProgress((prev) => {\n        if (prev >= 100) {\n          clearInterval(timer);\n          return 100;\n        }\n        return prev + Math.random() * 30;\n      });\n    }, 500);\n\n    return () => clearInterval(timer);\n  }, []);\n\n  return (\n    <div className=\"container\">\n      <Loader\n        variant=\"progress\"\n        progress={Math.min(progress, 100)}\n        showLabel\n        label=\"Uploading files...\"\n      />\n    </div>\n  );\n};\n```\n\n### Loader with Delay (Prevents Flash)\n\n```jsx\nimport React, { useState, useEffect } from 'react';\nimport { Loader } from '@paypal/design-system';\n\nexport const DelayedLoader = ({ isLoading }) => {\n  const [showLoader, setShowLoader] = useState(false);\n\n  useEffect(() => {\n    if (!isLoading) {\n      setShowLoader(false);\n      return;\n    }\n\n    const timer = setTimeout(() => {\n      setShowLoader(true);\n    }, 500); // Show loader only if loading for more than 500ms\n\n    return () => clearTimeout(timer);\n  }, [isLoading]);\n\n  return (\n    <Loader\n      variant=\"spinner\"\n      size=\"large\"\n      hidden={!showLoader}\n      label=\"Loading...\"\n    />\n  );\n};\n```\n\n### Full Page Loader with Overlay\n\n```jsx\nimport React from 'react';\nimport { Loader } from '@paypal/design-system';\nimport './PageLoader.css';\n\nexport const PageLoader = ({ isLoading, message }) => {\n  if (!isLoading) return null;\n\n  return (\n    <div className=\"loader-overlay\">\n      <div className=\"loader-container\">\n        <Loader\n          variant=\"spinner\"\n          size=\"large\"\n          label={message || 'Loading...'}\n          ariaLabel=\"Page loading\"\n        />\n      </div>\n    </div>\n  );\n};\n```\n\n### Multiple Loaders in a List\n\n```jsx\nimport React from 'react';\nimport { Loader } from '@paypal/design-system';\n\nexport const LoadingList = ({ items, isLoading }) => {\n  return (\n    <ul className=\"item-list\">\n      {items.map((item) => (\n        <li key={item.id}>\n          <span>{item.name}</span>\n          {item.isProcessing && (\n            <Loader\n              variant=\"spinner\"\n              size=\"small\"\n              ariaLabel={`Processing ${item.name}`}\n            />\n          )}\n        </li>\n      ))}\n      {isLoading && (\n        <li className=\"list-loader\">\n          <Loader\n            variant=\"progress\"\n            indeterminate\n            label=\"Loading more items...\"\n          />\n        </li>\n      )}\n    </ul>\n  );\n};\n```\n\n---\n\n## CSS Implementation\n\n### Base Styles\n\n```css\n/* Loader container */\n.loader {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-family: inherit;\n}\n\n.loader--spinner {\n  position: relative;\n}\n\n.loader--progress {\n  width: 100%;\n}\n\n/* Size variants - Spinner */\n.loader--small {\n  width: 20px;\n  height: 20px;\n}\n\n.loader--medium {\n  width: 40px;\n  height: 40px;\n}\n\n.loader--large {\n  width: 64px;\n  height: 64px;\n}\n\n/* Circular Spinner Animation */\n.loader__spinner {\n  border: 3px solid rgba(0, 112, 243, 0.2);\n  border-top: 3px solid #0070f3;\n  border-radius: 50%;\n  width: 100%;\n  height: 100%;\n  animation: spin 1.2s linear infinite;\n}\n\n@keyframes spin {\n  0% {\n    transform: rotate(0deg);\n  }\n  100% {\n    transform: rotate(360deg);\n  }\n}\n\n/* Progress Bar */\n.loader__progress-bar {\n  width: 100%;\n  height: 4px;\n  background-color: #e5e5e5;\n  border-radius: 2px;\n  overflow: hidden;\n  position: relative;\n}\n\n.loader__progress-fill {\n  height: 100%;\n  background-color: #0070f3;\n  border-radius: 2px;\n  transition: width 400ms ease-out;\n}\n\n/* Indeterminate Progress Animation */\n.loader__progress-fill--indeterminate {\n  animation: progress-animation 1.6s ease-in-out infinite;\n}\n\n@keyframes progress-animation {\n  0% {\n    width: 0%;\n    margin-left: 0;\n  }\n  50% {\n    width: 75%;\n    margin-left: 25%;\n  }\n  100% {\n    width: 0%;\n    margin-left: 100%;\n  }\n}\n\n/* Loader Label */\n.loader__label {\n  margin-top: 8px;\n  font-size: 14px;\n  color: #333;\n  text-align: center;\n}\n\n/* States */\n.loader--disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n\n.loader--paused .loader__spinner {\n  animation-play-state: paused;\n}\n\n.loader--paused .loader__progress-fill--indeterminate {\n  animation-play-state: paused;\n}\n\n.loader--completed {\n  animation: fadeOut 300ms ease-out forwards;\n}\n\n@keyframes fadeOut {\n  from {\n    opacity: 1;\n  }\n  to {\n    opacity: 0;\n  }\n}\n\n/* Color variants */\n.loader--primary .loader__spinner {\n  border-top-color: #0070f3;\n}\n\n.loader--primary .loader__progress-fill {\n  background-color: #0070f3;\n}\n\n.loader--success .loader__spinner {\n  border-top-color: #17a2b8;\n}\n\n.loader--success .loader__progress-fill {\n  background-color: #17a2b8;\n}\n\n.loader--error .loader__spinner {\n  border-top-color: #dc3545;\n}\n\n.loader--error .loader__progress-fill {\n  background-color: #dc3545;\n}\n\n.loader--warning .loader__spinner {\n  border-top-color: #ffc107;\n}\n\n.loader--warning .loader__progress-fill {\n  background-color: #ffc107;\n}\n\n/* Hidden state */\n.loader--hidden {\n  display: none;\n}\n\n/* Responsive adjustments */\n@media (prefers-reduced-motion: reduce) {\n  .loader__spinner,\n  .loader__progress-fill--indeterminate {\n    animation: none;\n    border-top-color: #0070f3;\n  }\n}\n```\n\n### Loader Wrapper/Container Styles\n\n```css\n/* Full page loader overlay */\n.loader-overlay {\n  position: fixed;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background-color: rgba(0, 0, 0, 0.5);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  z-index: 9999;\n}\n\n.loader-container {\n  background-color: white;\n  padding: 48px;\n  border-radius: 8px;\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n  text-align: center;\n}\n\n/* Inline loader wrapper */\n.loader-inline {\n  display: inline-flex;\n  gap: 12px;\n  align-items: center;\n}\n\n/* Centered section loader */\n.loader-section {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  padding: 32px;\n  gap: 16px;\n}\n```\n\n---\n\n## Accessibility (WCAG 2.1 AA)\n\n### Semantic HTML\n\n```html\n<!-- Spinner with semantic role -->\n<div\n  role=\"status\"\n  aria-live=\"polite\"\n  aria-label=\"Loading content\"\n  class=\"loader loader--spinner loader--medium\"\n>\n  <div class=\"loader__spinner\"></div>\n  <span class=\"loader__label\">Loading...</span>\n</div>\n\n<!-- Progress bar with semantic role -->\n<div\n  role=\"progressbar\"\n  aria-valuenow=\"65\"\n  aria-valuemin=\"0\"\n  aria-valuemax=\"100\"\n  aria-label=\"Upload progress\"\n  class=\"loader loader--progress\"\n>\n  <div class=\"loader__progress-bar\">\n    <div class=\"loader__progress-fill\" style=\"width: 65%\"></div>\n  </div>\n  <span class=\"loader__label\">65%</span>\n</div>\n```\n\n### ARIA Attributes\n\n| Attribute | Element | Value | Purpose |\n|-----------|---------|-------|---------|\n| `role=\"status\"` | Spinner | N/A | Announces updates to screen readers |\n| `role=\"progressbar\"` | Progress Bar | N/A | Indicates progress tracking element |\n| `aria-label` | Both | Descriptive text | Provides accessible name |\n| `aria-live` | Spinner | \"polite\" or \"assertive\" | Controls politeness level |\n| `aria-busy` | Container | \"true\" / \"false\" | Indicates busy state |\n| `aria-valuenow` | Progress Bar | 0-100 | Current progress value |\n| `aria-valuemin` | Progress Bar | 0 | Minimum progress value |\n| `aria-valuemax` | Progress Bar | 100 | Maximum progress value |\n| `aria-label` or `aria-labelledby` | Both | ID or text | Accessible label |\n\n### Screen Reader Announcements\n\n```jsx\n// Dynamic status updates\n<div role=\"status\" aria-live=\"polite\" aria-atomic=\"true\">\n  {message && <span>{message}</span>}\n  <Loader variant=\"spinner\" />\n</div>\n```\n\n### Focus Management\n\n- Loaders should not be focusable by default (`tabindex` should not be set)\n- Consider setting `aria-label` for clarity\n- Use `aria-busy=\"true\"` on the content being loaded to indicate loading state\n- Announce progress updates to screen readers\n\n### Keyboard Navigation\n\n- Loaders themselves require no keyboard interaction\n- Use arrow keys to adjust progress in determinate loaders (if interactive)\n- Use Escape key to cancel loading (if cancellable)\n\n### Motion and Animation Sensitivity\n\n```css\n/* Respect prefers-reduced-motion */\n@media (prefers-reduced-motion: reduce) {\n  .loader__spinner {\n    animation: none;\n    border-top-color: #0070f3;\n  }\n\n  .loader__progress-fill--indeterminate {\n    animation: none;\n  }\n}\n```\n\n### Color Contrast\n\n- **Spinner**: Primary blue (#0070f3) on light backgrounds\n- **Contrast Ratio**: Minimum 4.5:1 for normal text\n- **Do not rely solely on color** to communicate state\n- Provide text labels for all loaders\n\n### Testing Checklist\n\n- [ ] Test with screen readers (NVDA, JAWS, VoiceOver)\n- [ ] Verify ARIA labels are descriptive\n- [ ] Test with `prefers-reduced-motion` enabled\n- [ ] Ensure proper color contrast (4.5:1 minimum)\n- [ ] Verify role attributes are correct\n- [ ] Test keyboard navigation (if interactive)\n- [ ] Verify focus management\n\n---\n\n## Design Tokens\n\n### Color Tokens\n\n```css\n/* Primary Colors */\n--loader-primary: #0070f3;           /* PayPal Blue */\n--loader-primary-light: #e3f2fd;     /* Light blue background */\n--loader-primary-dark: #003da5;      /* Dark blue for high contrast */\n\n/* Semantic Colors */\n--loader-success: #17a2b8;           /* Teal/Green */\n--loader-error: #dc3545;             /* Red */\n--loader-warning: #ffc107;           /* Amber/Orange */\n--loader-secondary: #666666;         /* Dark gray */\n\n/* Neutral Colors */\n--loader-track-bg: #e5e5e5;          /* Progress track background */\n--loader-text: #333333;              /* Label text color */\n--loader-text-light: #666666;        /* Secondary text */\n\n/* Opacity */\n--loader-track-opacity: 0.2;         /* Spinner track opacity */\n--loader-disabled-opacity: 0.5;      /* Disabled state opacity */\n```\n\n### Size Tokens\n\n```css\n/* Spinner Sizes */\n--loader-size-small: 20px;\n--loader-size-medium: 40px;\n--loader-size-large: 64px;\n\n/* Stroke/Border */\n--loader-stroke-width: 3px;\n\n/* Progress Bar */\n--loader-progress-height: 4px;\n--loader-progress-radius: 2px;\n\n/* Spacing */\n--loader-label-margin-top: 8px;\n--loader-label-spacing-small: 8px;\n--loader-label-spacing-medium: 16px;\n--loader-label-spacing-large: 24px;\n```\n\n### Animation Tokens\n\n```css\n/* Spinner Animation */\n--loader-spinner-duration: 1.2s;\n--loader-spinner-timing: linear;\n\n/* Progress Animation */\n--loader-progress-duration: 1.6s;\n--loader-progress-timing: ease-in-out;\n\n/* Transitions */\n--loader-transition-duration: 400ms;\n--loader-transition-timing: ease-out;\n--loader-fade-duration: 300ms;\n```\n\n### Typography Tokens\n\n```css\n/* Label Text */\n--loader-label-font-size: 14px;\n--loader-label-line-height: 1.5;\n--loader-label-font-weight: 400;\n\n/* Percentage Text */\n--loader-percentage-font-size: 12px;\n--loader-percentage-font-weight: 500;\n```\n\n---\n\n## Best Practices\n\n### Design Guidelines\n\n#### 1. Choose the Right Variant\n- **Spinner**: Use for indefinite operations (API calls, page loads)\n- **Progress Bar**: Use when you can provide progress percentage (file uploads, multi-step forms)\n\n#### 2. Size Selection\n- **Small**: Inline with text, table cells, badge indicators\n- **Medium**: Default for cards, modals, sections (most common)\n- **Large**: Full-page loaders, hero sections, primary focus\n\n#### 3. Label and Messaging\n- Always provide descriptive labels when using loaders\n- Labels should be concise (1-2 words or short phrase)\n- For long operations, provide status updates dynamically\n- Consider showing estimated time when available\n- Be specific: \"Loading...\" is less helpful than \"Loading transactions...\"\n\n#### 4. Delay for Fast Operations\n- Implement a delay (500-800ms) before showing loader\n- Prevents visual flashing for quick operations\n- Improves perceived performance\n- Use `display: none` to hide rather than opacity\n\n#### 5. Loading State Container\n- Ensure content area maintains its layout during load\n- Use skeleton screens for actual content replacement\n- Consider using a placeholder with minimum height\n\n#### 6. Progressive Enhancement\n- Show loader early in the request cycle\n- Consider showing buffered/cached content first\n- Update progress for deterministic operations\n- Show completion state or results naturally\n\n#### 7. Cancellation\n- Provide cancel button for long-running operations\n- Clear indication of how to stop the process\n- Graceful cleanup on cancellation\n- Hide loader when cancellation is confirmed\n\n#### 8. Error Recovery\n- Transition spinner to error state on failure\n- Show error message below or next to loader\n- Provide retry mechanism\n- Use error color variant (#dc3545)\n\n### Implementation Guidelines\n\n#### Performance Considerations\n\n```jsx\n// Good: Memoize loader to prevent unnecessary re-renders\nconst MemoizedLoader = React.memo(({ isLoading, progress }) => (\n  <Loader\n    variant=\"progress\"\n    progress={progress}\n    hidden={!isLoading}\n  />\n));\n\n// Avoid: Creating new object references\n// \u274c Bad\n<Loader style={{ color: '#0070f3' }} />\n\n// \u2705 Good\n<Loader className=\"loader--primary\" />\n```\n\n#### Preventing Layout Shift\n\n```jsx\n// Reserve space for loader to prevent layout shift\n<div style={{ minHeight: '100px' }}>\n  {isLoading && <Loader variant=\"spinner\" size=\"large\" />}\n</div>\n```\n\n#### Accessibility Best Practices\n\n```jsx\n// Good: Clear, descriptive label\n<Loader\n  variant=\"spinner\"\n  label=\"Loading payment details...\"\n  ariaLabel=\"Loading payment details from PayPal\"\n/>\n\n// Avoid: Vague labels\n<Loader variant=\"spinner\" label=\"Loading...\" />\n```\n\n#### Responsive Design\n\n```css\n/* Adjust loader size for mobile */\n@media (max-width: 640px) {\n  .loader--large {\n    width: 40px;\n    height: 40px;\n  }\n}\n```\n\n---\n\n## Related Components\n\n### Similar/Complementary Components\n\n| Component | Purpose | When to Use |\n|-----------|---------|------------|\n| **Skeleton Screen** | Content placeholder | When replacing actual content during load |\n| **Progress Bar** | Deterministic progress | When progress percentage is known |\n| **Toast Notification** | Status message | After loading completes |\n| **Spinner Button** | Button with loader | Async button actions |\n| **Badge** | Status indicator | With small loaders for inline status |\n| **Modal Dialog** | Loading overlay | Full-page or modal loading states |\n\n### Integration Examples\n\n```jsx\n// Skeleton Screen with Loader\n<div className=\"content-wrapper\">\n  {isLoading ? (\n    <SkeletonScreen variant=\"card\" />\n  ) : (\n    <ContentCard data={data} />\n  )}\n  {isLoading && (\n    <Loader\n      variant=\"spinner\"\n      size=\"small\"\n      className=\"content-loader\"\n    />\n  )}\n</div>\n\n// Button with Loading State\n<Button\n  disabled={isLoading}\n  onClick={handleSubmit}\n>\n  {isLoading && <Loader variant=\"spinner\" size=\"small\" />}\n  {isLoading ? 'Submitting...' : 'Submit'}\n</Button>\n\n// Toast with Loading\n<Toast\n  message=\"Uploading your file...\"\n  icon={<Loader variant=\"spinner\" size=\"small\" />}\n  duration={0}\n/>\n```\n\n---\n\n## Testing Checklist\n\n### Functional Testing\n\n- [ ] Spinner rotates continuously\n- [ ] Progress bar updates smoothly\n- [ ] Indeterminate progress animates correctly\n- [ ] Loading state is triggered correctly\n- [ ] Loader hides when loading completes\n- [ ] Color variants display correctly\n- [ ] Size variants render at correct dimensions\n- [ ] Labels display and update correctly\n\n### Visual Regression Testing\n\n```javascript\n// Example: Visual regression test with Percy\nimport { render } from '@testing-library/react';\nimport { Loader } from '@paypal/design-system';\n\ndescribe('Loader Visual Tests', () => {\n  it('renders spinner correctly', () => {\n    const { container } = render(\n      <Loader variant=\"spinner\" size=\"medium\" label=\"Loading...\" />\n    );\n    cy.percySnapshot('Loader - Spinner Medium');\n  });\n\n  it('renders progress bar correctly', () => {\n    const { container } = render(\n      <Loader variant=\"progress\" progress={65} showLabel />\n    );\n    cy.percySnapshot('Loader - Progress 65%');\n  });\n});\n```\n\n### Accessibility Testing\n\n- [ ] Test with screen reader (NVDA, JAWS, VoiceOver)\n- [ ] Verify `aria-label` is announced\n- [ ] Verify `role=\"status\"` for spinners\n- [ ] Verify `role=\"progressbar\"` for progress bars\n- [ ] Test with `prefers-reduced-motion: reduce`\n- [ ] Verify color contrast meets WCAG AA (4.5:1)\n- [ ] Keyboard navigation works (if interactive)\n- [ ] Focus management is correct\n\n### Performance Testing\n\n```javascript\n// Example: Performance test\ndescribe('Loader Performance', () => {\n  it('does not cause layout thrashing', () => {\n    const { rerender } = render(\n      <Loader variant=\"progress\" progress={0} />\n    );\n\n    for (let i = 1; i <= 100; i++) {\n      rerender(<Loader variant=\"progress\" progress={i} />);\n    }\n\n    // Measure paint times, memory usage, etc.\n  });\n});\n```\n\n### Browser Compatibility Testing\n\n- [ ] Chrome/Edge (latest)\n- [ ] Firefox (latest)\n- [ ] Safari (latest)\n- [ ] Mobile browsers (iOS Safari, Chrome Mobile)\n- [ ] Older browsers if supported (IE11, etc.)\n\n### Integration Testing\n\n```javascript\n// Example: Integration test\nimport { render, screen, waitFor } from '@testing-library/react';\nimport { Loader } from '@paypal/design-system';\n\ndescribe('Loader Integration', () => {\n  it('shows and hides loader correctly', async () => {\n    const { rerender } = render(\n      <Loader variant=\"spinner\" label=\"Loading...\" />\n    );\n\n    expect(screen.getByText('Loading...')).toBeVisible();\n\n    rerender(\n      <Loader variant=\"spinner\" hidden />\n    );\n\n    expect(screen.queryByText('Loading...')).not.toBeInTheDocument();\n  });\n\n  it('updates progress smoothly', async () => {\n    const { rerender } = render(\n      <Loader variant=\"progress\" progress={0} />\n    );\n\n    rerender(<Loader variant=\"progress\" progress={50} />);\n    rerender(<Loader variant=\"progress\" progress={100} />);\n\n    await waitFor(() => {\n      // Verify smooth animation\n    });\n  });\n});\n```\n\n### Edge Cases to Test\n\n- [ ] Loader with very long label text\n- [ ] Loader with no label\n- [ ] Rapid show/hide cycles\n- [ ] Progress value > 100 or < 0\n- [ ] Multiple loaders on same page\n- [ ] Loader in scrollable container\n- [ ] Loader with custom colors\n- [ ] Loader state transitions\n\n---\n\n## Component Specifications Summary\n\n### Circular Spinner\n\n| Property | Value |\n|----------|-------|\n| **Sizes** | 20px, 40px, 64px |\n| **Stroke Width** | 3px |\n| **Color** | PayPal Blue (#0070f3) |\n| **Animation Duration** | 1.2s |\n| **Animation Type** | Linear infinite rotation |\n| **Track Opacity** | 20% |\n\n### Linear Progress Bar\n\n| Property | Value |\n|----------|-------|\n| **Height** | 4px |\n| **Width** | 100% (container) |\n| **Corner Radius** | 2px |\n| **Color** | PayPal Blue (#0070f3) |\n| **Track Color** | Light gray (#e5e5e5) |\n| **Transition Speed** | 400ms ease-out |\n| **Indeterminate Duration** | 1.6s ease-in-out |\n\n---\n\n## Changelog\n\n### Version 2.0.0\n- Initial documentation release\n- Added TypeScript props API\n- Added accessibility guidelines (WCAG 2.1 AA)\n- Added design tokens\n- Added React implementation examples\n- Added CSS implementation\n- Added testing checklist\n\n---\n\n## Resources\n\n- [WAI-ARIA: role=\"progressbar\"](https://www.w3.org/WAI/ARIA/apg/patterns/progressbar/)\n- [WAI-ARIA: role=\"status\"](https://www.w3.org/WAI/ARIA/apg/patterns/status/)\n- [WCAG 2.1 Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)\n- [Inclusive Patterns: Loading States](https://inclusive-components.design/)\n- [MDN: CSS Animations](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Animations)\n- [MDN: ARIA Live Regions](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/ARIA_Live_Regions)\n\n---\n\n## Contact & Support\n\nFor questions about the Loader component:\n- **Design System Team**: design-system@paypal.com\n- **GitHub Issues**: [PayPal Design System Repository](https://github.com/paypal/design-system)\n- **Component Status**: Active & Maintained\n\n---\n\n*Last Updated: 2026-03-18*\n*Maintained by: PayPal Design System Team*\n"}], "grading": {"eval_id": 2, "eval_name": "loader-component", "run": "without_skill", "expectations": [{"text": "Output file exists and has substantive content (>2000 words)", "passed": true, "evidence": "3698 words \u2014 verbose but much is generic boilerplate"}, {"text": "Includes a TypeScript interface definition", "passed": true, "evidence": "1 interface definition found"}, {"text": "Includes CSS animation with @keyframes for spinner rotation", "passed": true, "evidence": "3 @keyframes blocks"}, {"text": "Includes CSS with design token custom properties (var(--tokens)", "passed": false, "evidence": "0 var(--tokens \u2014 uses generic CSS variable names not tied to PayPal token system"}, {"text": "Specifies accessibility attributes: role=status and aria-live", "passed": true, "evidence": "7 role/status or aria-live references"}, {"text": "Includes iOS SwiftUI and Android Jetpack Compose platform APIs", "passed": false, "evidence": "0 iOS/SwiftUI or Android/Compose code \u2014 Figma fetch failed, fell back to generic examples"}, {"text": "Includes design tokens with animation duration and color token values", "passed": false, "evidence": "0 tokens. references \u2014 no PayPal token system integration"}, {"text": "Includes Testing Checklist section", "passed": true, "evidence": "39 checklist items \u2014 very thorough but not PayPal-specific"}], "pass_count": 5, "total": 8, "pass_rate": 0.625}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"skill_name": "figma-component-docs", "iteration": 1, "configurations": [{"name": "with_skill", "label": "With Skill", "evals": [{"eval_id": 0, "eval_name": "badge-component", "pass_rate": 1.0, "pass_count": 9, "total": 9}, {"eval_id": 1, "eval_name": "divider-component", "pass_rate": 0.875, "pass_count": 7, "total": 8}, {"eval_id": 2, "eval_name": "loader-component", "pass_rate": 1.0, "pass_count": 8, "total": 8}], "aggregate": {"mean_pass_rate": 0.958, "stddev": 0.072}}, {"name": "without_skill", "label": "Without Skill (Baseline)", "evals": [{"eval_id": 0, "eval_name": "badge-component", "pass_rate": 0.111, "pass_count": 1, "total": 9}, {"eval_id": 1, "eval_name": "divider-component", "pass_rate": 0.25, "pass_count": 2, "total": 8}, {"eval_id": 2, "eval_name": "loader-component", "pass_rate": 0.625, "pass_count": 5, "total": 8}], "aggregate": {"mean_pass_rate": 0.329, "stddev": 0.214}}], "delta": {"mean_pass_rate": 0.629, "note": "Skill improves pass rate by +62.9 percentage points on average"}, "analyst_observations": ["The skill consistently produces TypeScript interfaces, PayPal design token CSS (var(--tokens)), and iOS/Android platform APIs \u2014 all of which the baseline never produces.", "Divider with_skill narrowly missed the word-count assertion (1941 vs 2000) \u2014 Dividers are genuinely small components; the threshold may be too strict for simple components.", "Loader without_skill scored higher (0.625) than the other baselines because it's a more universally understood component \u2014 @keyframes, TypeScript interfaces, and accessibility aria-live are common enough that a general-purpose agent gets them right without help. The key differentiator the skill adds is PayPal-specific token integration.", "The WCAG assertion passes for both with and without in most cases \u2014 this is a non-discriminating assertion since any decent docs mention WCAG. Consider replacing it with a stricter 'includes a structured WCAG criteria table with pass/fail columns' check.", "The skill's biggest win is on the token system: 0 out of 3 baselines used var(--tokens), while all 3 skill runs did. This is the most concrete, measurable difference."]}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>
